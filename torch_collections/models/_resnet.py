@@ -5,20 +5,14 @@ import torchvision
 
 def resnet_fpn_feature_shape_fn(img_shape):
     """ Takes an image_shape as an input to calculate the FPN output sizes
-    Ensure that img_shape is of the format CHW
-    """
-    # C0_shape = np.array(img_shape[-2:])
-    #
-    # C1_shape = np.ceil(C0_shape / 2)
-    # C2_shape = np.ceil(C1_shape / 2)
-    #
-    # P3_shape = np.ceil(C2_shape / 2)
-    # P4_shape = np.ceil(P3_shape / 2)
-    # P5_shape = np.ceil(P4_shape / 2)
-    #
-    # P6_shape = np.ceil(P5_shape / 2)
-    # P7_shape = np.ceil(P6_shape / 2)
+    Ensure that img_shape is of the format (..., H, W)
 
+    Args
+        img_shape : image shape as torch.Tensor not torch.Size should have
+            H, W as last 2 axis
+    Returns
+        P3_shape, P4_shape, P5_shape, P6_shape, P7_shape : as 5 (2,) Tensors
+    """
     C0_shape = img_shape[-2:]
 
     C1_shape = torch.ceil(C0_shape / 2)
