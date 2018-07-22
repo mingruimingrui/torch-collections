@@ -33,6 +33,9 @@ class RetinaNet(torch.nn.Module):
         kwargs['num_classes'] = num_classes
         self.configs = make_configs(**kwargs)
 
+        # Make heper functions
+        self.fpn_feature_shape_fn = build_fpn_feature_shape_fn(self.configs['backbone'])
+
         # Make backbone model
         self.backbone_model = build_backbone_model(self.configs['backbone'])
         self.feature_pyramid_submodel = FeaturePyramidSubmodel(
@@ -70,18 +73,24 @@ class RetinaNet(torch.nn.Module):
         regression_outputs     = [self.regression_submodel(f)     for f in features]
         classification_outputs = [self.classification_submodel(f) for f in features]
 
-        # Concat them
+        # Concat outputs
         regression     = torch.cat(regression_outputs    , 1)
         classification = torch.cat(classification_outputs, 1)
 
+        # Train on regression and classification
         if self.training:
             return regression, classification
 
-        anchors = self.compute_anchors(x.shape[0], [f.shape for f in features])
+        # Collect batch information
+        current_batch_size = x.shape[0]
+        current_batch_shape = torch.Tensor(list(x.shape))
+        feature_shapes = self.fpn_feature_shape_fn(current_batch_shape)
+
+        # Get anchor outputs
+        anchors = self.compute_anchors(current_batch_size, feature_shapes)
 
         return anchors
 
         # return C3, C4, C5
 
-
-    # def collate_fn(self):
+    # def collate_fn(self, raw_batch):
