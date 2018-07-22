@@ -14,6 +14,7 @@ from ._retinanet import (
     DefaultClassificationModel,
     ComputeAnchors
 )
+from ..modules import RegressBoxes, ClipBoxes
 
 
 class RetinaNet(torch.nn.Module):
@@ -64,6 +65,10 @@ class RetinaNet(torch.nn.Module):
             scales=self.configs['anchor_scales']
         )
 
+        #
+        self.regress_boxes = RegressBoxes()
+        self.clip_boxes    = ClipBoxes()
+
     def forward(self, x):
         # Calculate features
         C3, C4, C5 =  self.backbone_model(x)
@@ -83,14 +88,19 @@ class RetinaNet(torch.nn.Module):
 
         # Collect batch information
         current_batch_size = x.shape[0]
-        current_batch_shape = torch.Tensor(list(x.shape))
-        feature_shapes = self.fpn_feature_shape_fn(current_batch_shape)
+        current_batch_image_shape = torch.Tensor(list(x.shape))
+        feature_shapes = self.fpn_feature_shape_fn(current_batch_image_shape)
 
-        # Get anchor outputs
+        # Compute base anchors
         anchors = self.compute_anchors(current_batch_size, feature_shapes)
 
-        return anchors
+        # Apply predicted regression to anchors
+        boxes = self.regress_boxes(anchors, regression)
+        boxes = self.clip_boxes(current_batch_image_shape, anchors)
 
-        # return C3, C4, C5
+        # detections = self.filter_detections(boxes, classification)
+        detections = boxes
 
-    # def collate_fn(self, raw_batch):
+        return detections
+
+    def collate_fn(self, raw_batch):
