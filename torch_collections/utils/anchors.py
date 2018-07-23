@@ -185,7 +185,7 @@ def anchor_targets_bbox(
             1, annotations[positive_indices, 4:5].long(), 1
         )
     else:
-        annotations  = torch.zeros(anchors.shape[0], annotations.shape[1])
+        annotations  = torch.zeros(anchors.shape[0], 5)
 
     # ignore annotations outside of image
     if mask_shape:
