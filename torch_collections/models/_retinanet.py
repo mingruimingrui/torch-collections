@@ -3,6 +3,8 @@
 import math
 import torch
 from ..modules import Anchors
+from ..utils import transforms
+from ..utils import anchors as utils_anchors
 
 
 class FeaturePyramidSubmodel(torch.nn.Module):
@@ -156,3 +158,80 @@ class ComputeAnchors(torch.nn.Module):
             all_anchors.append(anchors)
 
         return torch.cat(all_anchors, dim=1)
+
+
+def collate_fn(self, sample_group):
+    """ Collate fn requires datasets which returns samples as a dict in the following format
+    sample = {
+        'image'       : Image in HWC RGB format as a numpy.ndarray,
+        'annotations' : Annotations of shape (num_annotations, 5) also numpy.ndarray
+            - each row will represent 1 detection target of the format
+            (x1, y1, x2, y2, class_id)
+    }
+    """
+    # Gather image and annotations group
+    image_group       = [sample['image'] for sample in sample_group]
+    annotations_group = [sample['annotations'] for sample in sample_group]
+
+    # Preprocess individual samples
+    for index, (image, annotations) in enumerate(zip(image_group, annotations_group)):
+        image, scale = transforms.resize_image_1(
+            image,
+            min_side=self.configs['image_min_side'],
+            max_side=self.configs['image_max_side']
+        )
+        annotations[:, :4] *= scale
+        image_group[index] = image
+        annotations_group[index] = annotations
+
+    # Augment samples
+    #TODO: Implement functions for image augmentation
+
+    # Compile samples into batches
+    max_image_shape = tuple(max(image.shape[x] for image in image_group) for x in range(2))
+    feature_shapes = self.fpn_feature_shape_fn(torch.Tensor(max_image_shape))
+    anchors = self.compute_anchors(1, feature_shapes)[0]
+
+    image_batch = []
+    regression_batch = []
+    labels_batch = []
+
+    for index, (image, annotations) in enumerate(zip(image_group, annotations_group)):
+        # Perform normalization on image
+        image = transforms.pad_to(image, max_image_shape + (3,))
+        image = self.to_tensor(image)
+        image = self.normalize(image)
+
+        # Calculate sample regression and label targets
+        labels, annotations, anchor_states = utils_anchors.anchor_targets_bbox(
+            anchors,
+            torch.Tensor(annotations),
+            torch.Tensor([self.configs['num_classes']]),
+            mask_shape=image.shape
+        )
+        regression = utils_anchors.bbox_transform(
+            anchors,
+            annotations,
+            mean=self.regression_mean,
+            std=self.regression_std
+        )
+
+        # Append anchor states
+        anchor_states = anchor_states.reshape(-1, 1)
+        regression = torch.cat([regression, anchor_states], dim=1)
+        labels     = torch.cat([labels    , anchor_states], dim=1)
+
+        image_batch.append(image)
+        regression_batch.append(regression)
+        labels_batch.append(labels)
+
+    # Stack batches
+    image_batch      = torch.stack(image_batch     , dim=0)
+    regression_batch = torch.stack(regression_batch, dim=0)
+    labels_batch     = torch.stack(labels_batch    , dim=0)
+
+    return {
+        'image'         : image_batch,
+        'regression'    : regression_batch,
+        'classification': labels_batch
+    }

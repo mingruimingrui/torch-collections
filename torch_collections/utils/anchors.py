@@ -150,16 +150,16 @@ def anchor_targets_bbox(
 ):
     """ Generate anchor targets for bbox detection.
     Args
-        anchors: np.array of annotations of shape (N, 4) for (x1, y1, x2, y2).
-        annotations: np.array of shape (N, 5) for (x1, y1, x2, y2, label).
+        anchors: torch.Tensor of annotations of shape (N, 4) for (x1, y1, x2, y2).
+        annotations: torch.Tensor of shape (N, 5) for (x1, y1, x2, y2, label).
         num_classes: Number of classes to predict.
         mask_shape: If the image is padded with zeros, mask_shape can be used to mark the relevant part of the image.
         negative_overlap: IoU overlap for negative anchors (all anchors with overlap < negative_overlap are negative).
         positive_overlap: IoU overlap or positive anchors (all anchors with overlap > positive_overlap are positive).
     Returns
-        labels: np.array of shape (A, num_classes) where a row consists of 0 for negative and 1 for positive for a certain class.
-        annotations: np.array of shape (A, 5) for (x1, y1, x2, y2, label) containing the annotations corresponding to each anchor or 0 if there is no corresponding anchor.
-        anchor_states: np.array of shape (N,) containing the state of an anchor (-1 for ignore, 0 for bg, 1 for fg).
+        labels: torch.Tensor of shape (A, num_classes) where a row consists of 0 for negative and 1 for positive for a certain class.
+        annotations: torch.Tensor of shape (A, 5) for (x1, y1, x2, y2, label) containing the annotations corresponding to each anchor or 0 if there is no corresponding anchor.
+        anchor_states: torch.Tensor of shape (N,) containing the state of an anchor (-1 for ignore, 0 for bg, 1 for fg).
     """
     # anchor states: 1 is positive, 0 is negative, -1 is dont care
     anchor_states = torch.zeros(anchors.shape[0])
@@ -194,3 +194,55 @@ def anchor_targets_bbox(
         anchor_states[indices] = -1
 
     return labels, annotations, anchor_states
+
+
+def box_nms(bboxes, scores, threshold=0.5, mode='union'):
+    '''Non maximum suppression.
+    Args
+        bboxes: (tensor) bounding boxes, sized [N,4].
+        scores: (tensor) bbox scores, sized [N,].
+        threshold: (float) overlap threshold.
+        mode: (str) 'union' or 'min'.
+    Returns
+        keep: (tensor) selected indices.
+    Reference
+        https://github.com/rbgirshick/py-faster-rcnn/blob/master/lib/nms/py_cpu_nms.py
+        https://github.com/kuangliu/pytorch-retinanet/blob/master/utils.py
+    '''
+    x1 = bboxes[:,0]
+    y1 = bboxes[:,1]
+    x2 = bboxes[:,2]
+    y2 = bboxes[:,3]
+
+    areas = (x2-x1+1) * (y2-y1+1)
+    _, order = scores.sort(0, descending=True)
+
+    keep = []
+    while order.numel() > 0:
+        i = order[0]
+        keep.append(i)
+
+        if order.numel() == 1:
+            break
+
+        xx1 = x1[order[1:]].clamp(min=x1[i])
+        yy1 = y1[order[1:]].clamp(min=y1[i])
+        xx2 = x2[order[1:]].clamp(max=x2[i])
+        yy2 = y2[order[1:]].clamp(max=y2[i])
+
+        w = (xx2-xx1+1).clamp(min=0)
+        h = (yy2-yy1+1).clamp(min=0)
+        inter = w*h
+
+        if mode == 'union':
+            ovr = inter / (areas[i] + areas[order[1:]] - inter)
+        elif mode == 'min':
+            ovr = inter / areas[order[1:]].clamp(max=areas[i])
+        else:
+            raise TypeError('Unknown nms mode: %s.' % mode)
+
+        ids = (ovr<=threshold).nonzero().squeeze()
+        if ids.numel() == 0:
+            break
+        order = order[ids+1]
+    return torch.LongTensor(keep)
