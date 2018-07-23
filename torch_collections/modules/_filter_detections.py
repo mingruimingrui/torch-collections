@@ -1,4 +1,6 @@
+
 import torch
+from operator import itemgetter
 from ..utils import anchors as utils_anchors
 
 
@@ -20,11 +22,57 @@ class FilterDetections(torch.nn.Module):
         self.score_threshold = score_threshold
         self.max_detections  = max_detections
 
-    def forward(self, image_shape, boxes):
-        import pdb; pdb.set_trace()
-        x1 = torch.clamp(boxes[:, :, 0], 0, image_shape[-1])
-        y1 = torch.clamp(boxes[:, :, 1], 0, image_shape[-2])
-        x2 = torch.clamp(boxes[:, :, 2], 0, image_shape[-1])
-        y2 = torch.clamp(boxes[:, :, 3], 0, image_shape[-2])
+    def forward(self, boxes_batch, classification_batch):
+        all_results = []
 
-        return torch.stack([x1, y1, x2, y2], dim=2)
+        for boxes, classification in zip(boxes_batch, classification_batch):
+            # Perform per class filtering
+            all_keep = []
+            for c in range(classification.shape[1]):
+                scores = classification[:, c]
+                indices_keep = scores > self.score_threshold
+
+                if not torch.sum(indices_keep):
+                    continue
+
+                filtered_boxes  = boxes[indices_keep]
+                filtered_scores = scores[indices_keep]
+
+                nms_indices = utils_anchors.box_nms(
+                    filtered_boxes,
+                    filtered_scores,
+                    threshold=self.nms_threshold
+                )[:self.max_detections]
+
+                for index in nms_indices:
+                    all_keep.append({
+                        'box'  : filtered_boxes[index],
+                        'score': filtered_scores[index],
+                        'label': torch.IntTensor([c])
+                    })
+
+            if not len(all_keep):
+                all_results.append({
+                    'boxes' : torch.Tensor(),
+                    'scores': torch.Tensor(),
+                    'labels': torch.Tensor()
+                })
+                continue
+
+            # Select the top detections
+            all_keep.sort(key=itemgetter('score'))
+            all_keep = all_keep[::-1][:self.max_detections]
+
+            # Gather into arrays
+            boxes  = torch.stack([k['box']   for k in all_keep], dim=0)
+            scores = torch.stack([k['score'] for k in all_keep], dim=0)
+            labels = torch.stack([k['label'] for k in all_keep], dim=0)
+
+            # Gather into result
+            all_results.append({
+                'boxes' : boxes,
+                'scores': scores,
+                'labels': labels
+            })
+
+        return all_results
