@@ -14,7 +14,7 @@ class DetectionSmoothL1Loss(torch.nn.Module):
         indices           = anchor_state == 1
         if torch.sum(indices) == 0:
             # Return 0 if ignore all
-            return torch.zeros_like(input[0, 0, 0])
+            return torch.zeros_like(regression[0, 0, 0])
         regression        = regression[indices]
         regression_target = regression_target[indices]
 
