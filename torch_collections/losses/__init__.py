@@ -1,1 +1,2 @@
 from ._detection_focal_loss import DetectionFocalLoss
+from ._detection_smooth_l1_loss import DetectionSmoothL1Loss

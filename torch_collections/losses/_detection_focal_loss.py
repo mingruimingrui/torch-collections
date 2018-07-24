@@ -16,10 +16,16 @@ class DetectionFocalLoss(torch.nn.Module):
 
         # Filter out ignore anchors
         indices = anchor_state != -1
+        import pdb; pdb.set_trace()
+        if torch.sum(indices) == 0:
+            # Return 0 if ignore all
+            return torch.zeros_like(input[0, 0, 0])
         input   = input[indices]
         target  = target[indices]
 
         # compute focal loss
+        bce = -(target * torch.log(input) + (1.0 - target) * torch.log(1.0 - input))
+
         alpha_factor = torch.ones_like(target)
         alpha_factor = alpha_factor * self.alpha
         alpha_factor[target != 1] = 1 - self.alpha
@@ -27,8 +33,6 @@ class DetectionFocalLoss(torch.nn.Module):
         focal_weight = input
         focal_weight[target == 1] = 1 - focal_weight[target == 1]
         focal_weight = alpha_factor * focal_weight ** self.gamma
-
-        bce = -(target * torch.log(input) + (1.0 - target) * torch.log(1.0 - input))
 
         cls_loss = focal_weight * bce
 
