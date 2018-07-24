@@ -36,6 +36,4 @@ class DetectionFocalLoss(torch.nn.Module):
         normalizer = torch.sum(anchor_state == 1).float()
         normalizer = max(normalizer, 1)
 
-        import pdb; pdb.set_trace()
-
         return torch.sum(cls_loss) / normalizer
