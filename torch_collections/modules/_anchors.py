@@ -18,6 +18,8 @@ class Anchors(torch.nn.Module):
             ratios=ratios,
             scales=scales,
         )
+        self.anchors = torch.nn.Parameter(self.anchors)
+        self.anchors.requires_grad = False
 
     def forward(self, batch_size, feature_shape):
         # x.shape       = [-1, C, H, W]

@@ -51,7 +51,11 @@ class RetinaNet(torch.nn.Module):
             std=[0.229, 0.224, 0.225]
         )
         self.regression_mean = torch.Tensor([0, 0, 0, 0])
-        self.regression_std  = torch.Tensor([0.2, 0.2, 0.2, 0.2])
+        self.regression_mean = torch.nn.Parameter(self.regression_mean)
+        self.regression_mean.requires_grad = False
+        self.regression_std = torch.Tensor([0.2, 0.2, 0.2, 0.2])
+        self.regression_std = torch.nn.Parameter(self.regression_std)
+        self.regression_std.requires_grad = False
 
         # Make backbone model
         self.backbone_model = build_backbone_model(self.configs['backbone'])
@@ -89,6 +93,8 @@ class RetinaNet(torch.nn.Module):
         self.filter_detections = FilterDetections()
 
     def forward(self, x):
+        is_cuda = self.regression_mean.is_cuda
+
         # Calculate features
         C3, C4, C5 =  self.backbone_model(x)
         features = self.feature_pyramid_submodel(C3, C4, C5)
@@ -108,6 +114,8 @@ class RetinaNet(torch.nn.Module):
         # Collect batch information
         current_batch_size = x.shape[0]
         current_batch_image_shape = torch.Tensor(list(x.shape))
+        if is_cuda:
+            current_batch_image_shape = current_batch_image_shape.cuda()
         feature_shapes = self.fpn_feature_shape_fn(current_batch_image_shape)
 
         # Compute base anchors

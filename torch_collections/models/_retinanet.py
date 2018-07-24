@@ -169,6 +169,9 @@ def collate_fn(self, sample_group):
             (x1, y1, x2, y2, class_id)
     }
     """
+    # check if using cuda
+    is_cuda = self.regression_mean.is_cuda
+
     # Gather image and annotations group
     image_group       = [sample['image'] for sample in sample_group]
     annotations_group = [sample['annotations'] for sample in sample_group]
@@ -197,17 +200,28 @@ def collate_fn(self, sample_group):
     labels_batch = []
 
     for index, (image, annotations) in enumerate(zip(image_group, annotations_group)):
-        # Perform normalization on image
+        # Perform normalization on image and convert to tensor
         image = transforms.pad_to(image, max_image_shape + (3,))
         image = self.to_tensor(image)
         image = self.normalize(image)
 
+        # Convert annotations to tensors
+        annotations = torch.Tensor(annotations)
+        num_classes = torch.Tensor([self.configs['num_classes']])
+
+        # Convert to cuda if training with cuda
+        if is_cuda:
+            image = image.cuda()
+            annotations = annotations.cuda()
+            num_classes = num_classes.cuda()
+
         # Calculate sample regression and label targets
         labels, annotations, anchor_states = utils_anchors.anchor_targets_bbox(
             anchors,
-            torch.Tensor(annotations),
-            torch.Tensor([self.configs['num_classes']]),
-            mask_shape=image.shape
+            annotations,
+            num_classes,
+            mask_shape=image.shape,
+            cuda=is_cuda
         )
         regression = utils_anchors.bbox_transform(
             anchors,
