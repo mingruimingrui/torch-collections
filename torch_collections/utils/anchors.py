@@ -146,8 +146,7 @@ def anchor_targets_bbox(
     num_classes,
     mask_shape=None,
     negative_overlap=0.4,
-    positive_overlap=0.5,
-    cuda=False
+    positive_overlap=0.5
 ):
     """ Generate anchor targets for bbox detection.
     Args
@@ -163,11 +162,8 @@ def anchor_targets_bbox(
         anchor_states: torch.Tensor of shape (N,) containing the state of an anchor (-1 for ignore, 0 for bg, 1 for fg).
     """
     # anchor states: 1 is positive, 0 is negative, -1 is dont care
-    anchor_states = torch.zeros(anchors.shape[0])
-    labels        = torch.zeros(anchors.shape[0], num_classes)
-    if cuda:
-        anchor_states = anchor_states.cuda()
-        labels        = labels.cuda()
+    anchor_states = torch.zeros_like(anchors[:, 0])
+    labels        = torch.stack([anchor_states] * num_classes, dim=1)
 
     if annotations.shape[0] > 0:
         # obtain indices of gt annotations with the greatest overlap
@@ -189,9 +185,7 @@ def anchor_targets_bbox(
             1, annotations[positive_indices, 4:5].long(), 1
         )
     else:
-        annotations  = torch.zeros(anchors.shape[0], 5)
-        if cuda:
-            annotations = annotations.cuda()
+        annotations = torch.stack([anchor_states] * 5, dim=1)
 
     # ignore annotations outside of image
     if mask_shape:

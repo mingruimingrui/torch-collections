@@ -168,9 +168,15 @@ def collate_fn(self, sample_group):
             - each row will represent 1 detection target of the format
             (x1, y1, x2, y2, class_id)
     }
+    Returns a sample in the following format
+    sample = {
+        'image'          : Images in NCHW normalized according to pytorch standard
+        'regression'     : Box regression targets shaped (N, num_anchors, 4 + 1)
+        'classification' : Classification targets shaped (N, num_anchors, num_classes + 1)
+    }
+    The + 1 for regression and classification is anchor states.
+    Anchor states are coded in the following manner,  -1: ignore  0: negative  1: positive
     """
-    # check if using cuda
-    is_cuda = self.regression_mean.is_cuda
 
     # Gather image and annotations group
     image_group       = [sample['image'] for sample in sample_group]
@@ -209,8 +215,8 @@ def collate_fn(self, sample_group):
         annotations = torch.Tensor(annotations)
         num_classes = torch.Tensor([self.configs['num_classes']])
 
-        # Convert to cuda if training with cuda
-        if is_cuda:
+        if self.regression_mean.is_cuda:
+            # Convert to cuda if training with cuda
             image = image.cuda()
             annotations = annotations.cuda()
             num_classes = num_classes.cuda()
@@ -220,8 +226,7 @@ def collate_fn(self, sample_group):
             anchors,
             annotations,
             num_classes,
-            mask_shape=image.shape,
-            cuda=is_cuda
+            mask_shape=image.shape
         )
         regression = utils_anchors.bbox_transform(
             anchors,

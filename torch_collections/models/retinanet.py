@@ -93,8 +93,6 @@ class RetinaNet(torch.nn.Module):
         self.filter_detections = FilterDetections()
 
     def forward(self, x):
-        is_cuda = self.regression_mean.is_cuda
-
         # Calculate features
         C3, C4, C5 =  self.backbone_model(x)
         features = self.feature_pyramid_submodel(C3, C4, C5)
@@ -114,7 +112,7 @@ class RetinaNet(torch.nn.Module):
         # Collect batch information
         current_batch_size = x.shape[0]
         current_batch_image_shape = torch.Tensor(list(x.shape))
-        if is_cuda:
+        if self.regression_mean.is_cuda:
             current_batch_image_shape = current_batch_image_shape.cuda()
         feature_shapes = self.fpn_feature_shape_fn(current_batch_image_shape)
 
