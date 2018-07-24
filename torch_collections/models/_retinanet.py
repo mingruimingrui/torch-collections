@@ -189,7 +189,7 @@ def collate_fn(self, sample_group):
             min_side=self.configs['image_min_side'],
             max_side=self.configs['image_max_side']
         )
-        annotations[:, :4] = annotations[:, :4].clone() * scale
+        annotations[:, :4] = annotations[:, :4] * scale
         image_group[index] = image
         annotations_group[index] = annotations
 
