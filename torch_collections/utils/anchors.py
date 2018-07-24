@@ -65,11 +65,11 @@ def generate_anchors_at_window(
 
     # correct for ratios
     anchors[:, 2] = torch.sqrt(areas / repeated_ratios)
-    anchors[:, 3] = anchors[:, 2] * repeated_ratios
+    anchors[:, 3] = anchors[:, 2].clone() * repeated_ratios
 
     # transform from (x_ctr, y_ctr, w, h) -> (x1, y1, x2, y2)
-    anchors[:, 0::2] -= anchors[:, 2:3] / 2
-    anchors[:, 1::2] -= anchors[:, 3:4] / 2
+    anchors[:, 0::2] = anchors[:, 0::2].clone() - anchors[:, 2:3].clone() / 2
+    anchors[:, 1::2] = anchors[:, 1::2].clone() - anchors[:, 3:4].clone() / 2
 
     return anchors
 

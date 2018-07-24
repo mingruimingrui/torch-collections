@@ -19,8 +19,8 @@ class DetectionFocalLoss(torch.nn.Module):
         if torch.sum(indices) == 0:
             # Return 0 if ignore all
             return torch.zeros_like(classification[0, 0, 0])
-        classification   = classification[indices]
-        target  = target[indices]
+        classification = classification[indices]
+        target         = target[indices]
 
         # compute focal loss
         bce = -(target * torch.log(classification) + (1.0 - target) * torch.log(1.0 - classification))
@@ -30,7 +30,7 @@ class DetectionFocalLoss(torch.nn.Module):
         alpha_factor[target != 1] = 1 - self.alpha
 
         focal_weight = classification
-        focal_weight[target == 1] = 1 - focal_weight[target == 1]
+        focal_weight[target == 1] = 1 - focal_weight[target == 1].clone()
         focal_weight = alpha_factor * focal_weight ** self.gamma
 
         cls_loss = focal_weight * bce
