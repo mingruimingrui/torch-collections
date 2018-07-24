@@ -16,7 +16,6 @@ class DetectionFocalLoss(torch.nn.Module):
 
         # Filter out ignore anchors
         indices = anchor_state != -1
-        import pdb; pdb.set_trace()
         if torch.sum(indices) == 0:
             # Return 0 if ignore all
             return torch.zeros_like(input[0, 0, 0])
