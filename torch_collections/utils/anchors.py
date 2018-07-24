@@ -78,6 +78,9 @@ def shift_anchors(shape, stride, anchors):
     """ Produce shifted anchors based on shape of the map and stride size """
     shift_x = torch.arange(0 + 0.5, shape[1] + 0.5, step=1) * stride
     shift_y = torch.arange(0 + 0.5, shape[0] + 0.5, step=1) * stride
+    if anchors.is_cuda:
+        shift_x.cuda()
+        shift_y.cuda()
 
     shift_x, shift_y = meshgrid2d(shift_x, shift_y)
 

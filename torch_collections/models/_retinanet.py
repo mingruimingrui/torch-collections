@@ -213,19 +213,17 @@ def collate_fn(self, sample_group):
 
         # Convert annotations to tensors
         annotations = torch.Tensor(annotations)
-        num_classes = torch.Tensor([self.configs['num_classes']])
 
         if self.regression_mean.is_cuda:
             # Convert to cuda if training with cuda
             image = image.cuda()
             annotations = annotations.cuda()
-            num_classes = num_classes.cuda()
 
         # Calculate sample regression and label targets
         labels, annotations, anchor_states = utils_anchors.anchor_targets_bbox(
             anchors,
             annotations,
-            num_classes,
+            self.configs['num_classes'],
             mask_shape=image.shape
         )
         regression = utils_anchors.bbox_transform(

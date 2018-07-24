@@ -1,8 +1,9 @@
 import torch
 
 
-class DetectionFocalLoss(toch.nn.Module):
-    def __init(self, alpha=0.25, gamma=2.0):
+class DetectionFocalLoss(torch.nn.Module):
+    def __init__(self, alpha=0.25, gamma=2.0):
+        super(DetectionFocalLoss, self).__init__()
         self.alpha = alpha
         self.gamma = gamma
 
@@ -15,16 +16,16 @@ class DetectionFocalLoss(toch.nn.Module):
 
         # Filter out ignore anchors
         indices = anchor_state != -1
-        input   = labels[indices]
+        input   = input[indices]
         target  = target[indices]
 
         # compute focal loss
-        alpha_factor = torch.ones(target)
+        alpha_factor = torch.ones_like(target)
         alpha_factor = alpha_factor * self.alpha
-        alpha_factor[labels == 1] = 1 - self.alpha
+        alpha_factor[target != 1] = 1 - self.alpha
 
         focal_weight = input
-        focal_weight[labels != 1] = 1 - focal_weight[labels != 1]
+        focal_weight[target == 1] = 1 - focal_weight[target == 1]
         focal_weight = alpha_factor * focal_weight ** self.gamma
 
         bce = -(target * torch.log(input) + (1.0 - target) * torch.log(1.0 - input))
@@ -32,7 +33,9 @@ class DetectionFocalLoss(toch.nn.Module):
         cls_loss = focal_weight * bce
 
         # Compute the normalizing factor: number of positive anchors
-        normalizer = torch.sum(anchor_state == 1)
+        normalizer = torch.sum(anchor_state == 1).float()
         normalizer = max(normalizer, 1)
+
+        import pdb; pdb.set_trace()
 
         return torch.sum(cls_loss) / normalizer
