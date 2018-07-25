@@ -184,9 +184,10 @@ def anchor_targets_bbox(
         annotations = annotations[argmax_overlaps_inds]
 
         # compute target class labels
-        labels[positive_indices] = labels[positive_indices].scatter(
-            1, annotations[positive_indices, 4:5].long(), 1
-        )
+        if torch.sum(positive_indices) > 0:
+            labels[positive_indices] = labels[positive_indices].scatter(
+                1, annotations[positive_indices, 4:5].long(), 1
+            )
     else:
         annotations = torch.stack([anchor_states] * 5, dim=1)
 
