@@ -55,7 +55,6 @@ class DetectionSmoothL1Loss(torch.nn.Module):
         regression_loss[~indices_smooth] = regression_diff[~indices_smooth] - 0.5 / self.sigma_squared
 
         # compute the normalizer: the number of positive anchors
-        normalizer = torch.sum(anchor_state == 1).float()
-        normalizer = max(normalizer, 1)
+        normalizer = torch.sum(anchor_state == 1).float().clamp(min=1)
 
         return torch.sum(regression_loss) / normalizer

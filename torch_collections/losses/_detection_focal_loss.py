@@ -56,7 +56,6 @@ class DetectionFocalLoss(torch.nn.Module):
         cls_loss = focal_weight * bce
 
         # Compute the normalizing factor: number of positive anchors
-        normalizer = torch.sum(anchor_state == 1).float()
-        normalizer = max(normalizer, 1)
+        normalizer = torch.sum(anchor_state == 1).float().clamp(min=10)
 
         return torch.sum(cls_loss) / normalizer
