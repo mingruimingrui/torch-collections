@@ -2,6 +2,25 @@ import torch
 
 
 class DetectionSmoothL1Loss(torch.nn.Module):
+    """ Huber Loss for detection with anchor states
+    sigma configured on initialization
+
+    Returns None in the event that loss should not be computed
+    (Done so that backprop can be easily ommitted in such events)
+
+    When calling forward,
+        model output should be (num_batch, num_anchors, 4) shaped
+        model target should be (num_batch, num_anchors, 4 + 1) shaped
+
+    The + 1 is the index for anchor state
+        -1 represents ignore anchor
+        0 represents negative anchor (no class)
+        1 represents positive anchor (has class)
+
+    Each anchor for target will be of the format (x1, y1, x2, y2, anchor_state)
+
+    Loss will be normalized across postive anchors
+    """
     def __init__(self, sigma=3.0):
         super(DetectionSmoothL1Loss, self).__init__()
         self.sigma_squared = sigma ** 2
