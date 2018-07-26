@@ -1,5 +1,4 @@
 import torch
-from ..utils import anchors as utils_anchors
 
 
 class ClipBoxes(torch.nn.Module):
