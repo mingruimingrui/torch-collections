@@ -1,7 +1,6 @@
 """ Retinanet implementation in torch """
 
 import torch
-import torchvision
 
 # Default configs
 from ._retinanet_configs import make_configs
@@ -19,9 +18,9 @@ from ._retinanet import (
     DefaultRegressionModel,
     DefaultClassificationModel,
     ComputeAnchors,
-    collate_fn
+    RetinaNetLoss,
+    build_collate_container
 )
-from ..losses import RetinaNetLoss
 
 # Common detection submodules
 from ..modules import RegressBoxes, ClipBoxes, FilterDetections
@@ -46,11 +45,6 @@ class RetinaNet(torch.nn.Module):
 
         # Make helper functions and variables
         self.fpn_feature_shape_fn = build_fpn_feature_shape_fn(self.configs['backbone'])
-        self.to_tensor = torchvision.transforms.ToTensor()
-        self.normalize = torchvision.transforms.Normalize(
-            mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225]
-        )
         self.build_modules()
 
     def build_modules(self):
@@ -137,4 +131,4 @@ class RetinaNet(torch.nn.Module):
     ###########################################################################
     #### Start of collate_fn
 
-    collate_fn = collate_fn
+    build_collate_container = build_collate_container
