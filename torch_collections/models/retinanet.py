@@ -113,9 +113,7 @@ class RetinaNet(torch.nn.Module):
             return self.loss_fn(outputs, batch)
 
         # Collect batch information
-        current_batch_size = batch['image'].shape[0]
-        current_batch_image_shape = torch.Tensor(list(batch['image'].shape))
-        feature_shapes = self.fpn_feature_shape_fn(current_batch_image_shape)
+        feature_shapes = self.fpn_feature_shape_fn(batch['image'].shape)
 
         # Compute base anchors
         anchors = self.compute_anchors(current_batch_size, feature_shapes)

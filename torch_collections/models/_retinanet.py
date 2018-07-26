@@ -21,7 +21,7 @@ def compute_targets(
     regression_std
 ):
     # Compute anchors given image shape
-    image_shape = torch.Tensor(list(batch['image'].shape))
+    image_shape = batch['image'].shape
     feature_shapes = fpn_feature_shape_fn(image_shape)
     anchors = compute_anchors(1, feature_shapes)[0]
 
@@ -35,7 +35,7 @@ def compute_targets(
             anchors,
             annotations,
             num_classes=num_classes,
-            mask_shape=batch['image'].shape
+            mask_shape=image_shape
         )
         regression = utils_anchors.bbox_transform(
             anchors,
