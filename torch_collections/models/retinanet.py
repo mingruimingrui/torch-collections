@@ -21,6 +21,7 @@ from ._retinanet import (
     ComputeAnchors,
     collate_fn
 )
+from ..losses import RetinaNetLoss
 
 # Common detection submodules
 from ..modules import RegressBoxes, ClipBoxes, FilterDetections
@@ -50,13 +51,10 @@ class RetinaNet(torch.nn.Module):
             mean=[0.485, 0.456, 0.406],
             std=[0.229, 0.224, 0.225]
         )
-        self.regression_mean = torch.Tensor([0, 0, 0, 0])
-        self.regression_mean = torch.nn.Parameter(self.regression_mean)
-        self.regression_mean.requires_grad = False
-        self.regression_std = torch.Tensor([0.2, 0.2, 0.2, 0.2])
-        self.regression_std = torch.nn.Parameter(self.regression_std)
-        self.regression_std.requires_grad = False
+        self.build_modules()
 
+    def build_modules(self):
+        """ Build all modules and submodels for RetinaNet """
         # Make backbone model
         self.backbone_model = build_backbone_model(self.configs['backbone'])
         self.feature_pyramid_submodel = FeaturePyramidSubmodel(
@@ -85,16 +83,23 @@ class RetinaNet(torch.nn.Module):
             scales=self.configs['anchor_scales']
         )
 
+        # Create loss function
+        self.loss_fn = RetinaNetLoss(
+            num_classes=self.configs['num_classes'],
+            fpn_feature_shape_fn=self.fpn_feature_shape_fn,
+            compute_anchors=self.compute_anchors
+        )
+
         # Create functions to inverse the bbox transform
-        self.regress_boxes = RegressBoxes(mean=self.regression_mean, std=self.regression_std)
+        self.regress_boxes = RegressBoxes()
         self.clip_boxes    = ClipBoxes()
 
         # Create funciton to apply NMS
         self.filter_detections = FilterDetections()
 
-    def forward(self, x):
+    def forward(self, batch):
         # Calculate features
-        C3, C4, C5 =  self.backbone_model(x)
+        C3, C4, C5 =  self.backbone_model(batch['image'])
         features = self.feature_pyramid_submodel(C3, C4, C5)
 
         # Apply regression and classificatio submodels on each feature
@@ -107,13 +112,15 @@ class RetinaNet(torch.nn.Module):
 
         # Train on regression and classification
         if self.training:
-            return regression, classification
+            outputs = {
+                'regression'     : regression,
+                'classification' : classification
+            }
+            return self.loss_fn(outputs, batch)
 
         # Collect batch information
-        current_batch_size = x.shape[0]
-        current_batch_image_shape = torch.Tensor(list(x.shape))
-        if self.regression_mean.is_cuda:
-            current_batch_image_shape = current_batch_image_shape.cuda()
+        current_batch_size = batch['image'].shape[0]
+        current_batch_image_shape = torch.Tensor(list(batch['image'].shape))
         feature_shapes = self.fpn_feature_shape_fn(current_batch_image_shape)
 
         # Compute base anchors

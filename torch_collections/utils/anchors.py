@@ -44,8 +44,8 @@ def generate_anchors_at_window(
     """ Generate anchors based on a size a set of ratios and scales
     w.r.t a reference window
     """
-    if not isinstance(base_size, torch.Tensor):
-        base_size = torch.Tensor([base_size]).reshape(1)
+    # if not isinstance(base_size, torch.Tensor):
+    #     base_size = torch.Tensor([base_size]).reshape(1)
     if not isinstance(ratios, torch.Tensor):
         ratios = torch.Tensor(ratios)
     if not isinstance(scales, torch.Tensor):
@@ -133,10 +133,10 @@ def bbox_transform_inv(boxes, deltas, mean, std):
     width  = boxes[:, :, 2] - boxes[:, :, 0]
     height = boxes[:, :, 3] - boxes[:, :, 1]
 
-    x1 = boxes[:, :, 0] + (deltas[:, :, 0] * std[0] + mean[0]) * width
-    y1 = boxes[:, :, 1] + (deltas[:, :, 1] * std[1] + mean[1]) * height
-    x2 = boxes[:, :, 2] + (deltas[:, :, 2] * std[2] + mean[2]) * width
-    y2 = boxes[:, :, 3] + (deltas[:, :, 3] * std[3] + mean[3]) * height
+    x1 = boxes[:, :, 0] + (deltas[:, :, 0] * std + mean) * width
+    y1 = boxes[:, :, 1] + (deltas[:, :, 1] * std + mean) * height
+    x2 = boxes[:, :, 2] + (deltas[:, :, 2] * std + mean) * width
+    y2 = boxes[:, :, 3] + (deltas[:, :, 3] * std + mean) * height
 
     pred_boxes = torch.stack([x1, y1, x2, y2], dim=2)
 
@@ -192,9 +192,9 @@ def anchor_targets_bbox(
         annotations = torch.stack([anchor_states] * 5, dim=1)
 
     # ignore annotations outside of image
-    if mask_shape:
+    if mask_shape is not None:
         anchors_centers        = (anchors[:, :2] + anchors[:, 2:]) / 2
-        indices                = (anchors_centers[:, 0] >= mask_shape[2]) | (anchors_centers[:, 1] >= mask_shape[1])
+        indices                = (anchors_centers[:, 0] >= mask_shape[-1]) | (anchors_centers[:, 1] >= mask_shape[-2])
         anchor_states[indices] = -1
 
     return labels, annotations, anchor_states

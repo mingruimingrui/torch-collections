@@ -170,12 +170,10 @@ def collate_fn(self, sample_group):
     }
     Returns a sample in the following format
     sample = {
-        'image'          : Images in NCHW normalized according to pytorch standard
-        'regression'     : Box regression targets shaped (N, num_anchors, 4 + 1)
-        'classification' : Classification targets shaped (N, num_anchors, num_classes + 1)
+        'image'          : torch.Tensor Images in NCHW normalized according to pytorch standard
+        'annotations'    : list of torch.Tensor of shape (N, num_anchors, 5)
+                           Number of objects in list corresponds to batch size
     }
-    The + 1 for regression and classification is anchor states.
-    Anchor states are coded in the following manner,  -1: ignore  0: negative  1: positive
     """
 
     # Gather image and annotations group
@@ -198,14 +196,10 @@ def collate_fn(self, sample_group):
 
     # Compile samples into batches
     max_image_shape = tuple(max(image.shape[x] for image in image_group) for x in range(2))
-    feature_shapes = self.fpn_feature_shape_fn(torch.Tensor(max_image_shape))
-    anchors = self.compute_anchors(1, feature_shapes)[0]
-
     image_batch = []
-    regression_batch = []
-    labels_batch = []
+    annotations_batch = []
 
-    for index, (image, annotations) in enumerate(zip(image_group, annotations_group)):
+    for image, annotations in zip(image_group, annotations_group):
         # Perform normalization on image and convert to tensor
         image = transforms.pad_to(image, max_image_shape + (3,))
         image = self.to_tensor(image)
@@ -214,41 +208,19 @@ def collate_fn(self, sample_group):
         # Convert annotations to tensors
         annotations = torch.Tensor(annotations)
 
-        if self.regression_mean.is_cuda:
-            # Convert to cuda if training with cuda
-            image = image.cuda()
-            annotations = annotations.cuda()
-
-        # Calculate sample regression and label targets
-        labels, annotations, anchor_states = utils_anchors.anchor_targets_bbox(
-            anchors,
-            annotations,
-            self.configs['num_classes'],
-            mask_shape=image.shape
-        )
-        regression = utils_anchors.bbox_transform(
-            anchors,
-            annotations,
-            mean=self.regression_mean,
-            std=self.regression_std
-        )
-
-        # Append anchor states
-        anchor_states = anchor_states.reshape(-1, 1)
-        regression = torch.cat([regression, anchor_states], dim=1)
-        labels     = torch.cat([labels    , anchor_states], dim=1)
-
         image_batch.append(image)
-        regression_batch.append(regression)
-        labels_batch.append(labels)
+        annotations_batch.append(annotations)
 
-    # Stack batches
-    image_batch      = torch.stack(image_batch     , dim=0)
-    regression_batch = torch.stack(regression_batch, dim=0)
-    labels_batch     = torch.stack(labels_batch    , dim=0)
+    # Stack image batches only as annotations batch can be differently sized
+    image_batch = torch.stack(image_batch, dim=0)
+
+    # Seems like a very long winded way to figure out if a model is training on GPU or not
+    if self.feature_pyramid_submodel.conv_P3.bias.is_cuda:
+        # Convert to cuda if needed
+        image_batch = image_batch.cuda()
+        annotations_batch = [anns.cuda() for anns in annotations_batch]
 
     return {
-        'image'         : image_batch,
-        'regression'    : regression_batch,
-        'classification': labels_batch
+        'image'       : image_batch,
+        'annotations' : annotations_batch
     }
