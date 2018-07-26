@@ -25,7 +25,7 @@ def compute_targets(
             anchors,
             annotations,
             num_classes=num_classes,
-            mask_shape=image_shape
+            mask_shape=batch['image'].shape
         )
         regression = utils_anchors.bbox_transform(
             anchors,
