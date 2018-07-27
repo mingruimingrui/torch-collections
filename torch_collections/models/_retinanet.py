@@ -1,10 +1,62 @@
 """ RetinaNet submodules """
 
 import math
+from copy import deepcopy
+
 import torch
+import torchvision
+
 from ..modules import Anchors
+from ..losses import DetectionFocalLoss, DetectionSmoothL1Loss
 from ..utils import transforms
 from ..utils import anchors as utils_anchors
+
+
+def compute_targets(
+    batch,
+    num_classes,
+    fpn_feature_shape_fn,
+    compute_anchors,
+    regression_mean,
+    regression_std
+):
+    # Compute anchors given image shape
+    image_shape = batch['image'].shape
+    feature_shapes = fpn_feature_shape_fn(image_shape)
+    anchors = compute_anchors(1, feature_shapes)[0]
+
+    # Create blobs to store anchor informations
+    regression_batch = []
+    labels_batch = []
+    states_batch = []
+
+    for annotations in batch['annotations']:
+        labels, annotations, anchor_states = utils_anchors.anchor_targets_bbox(
+            anchors,
+            annotations,
+            num_classes=num_classes,
+            mask_shape=image_shape
+        )
+        regression = utils_anchors.bbox_transform(
+            anchors,
+            annotations,
+            mean=regression_mean,
+            std=regression_std
+        )
+
+        regression_batch.append(regression)
+        labels_batch.append(labels)
+        states_batch.append(anchor_states)
+
+        regression_batch = torch.stack(regression_batch, dim=0)
+        labels_batch     = torch.stack(labels_batch    , dim=0)
+        states_batch     = torch.stack(states_batch    , dim=0)
+
+    return {
+        'regression'     : regression_batch,
+        'classification' : labels_batch,
+        'anchor_states'  : states_batch
+    }
 
 
 class FeaturePyramidSubmodel(torch.nn.Module):
@@ -160,67 +212,149 @@ class ComputeAnchors(torch.nn.Module):
         return torch.cat(all_anchors, dim=1)
 
 
-def collate_fn(self, sample_group):
-    """ Collate fn requires datasets which returns samples as a dict in the following format
-    sample = {
-        'image'       : Image in HWC RGB format as a numpy.ndarray,
-        'annotations' : Annotations of shape (num_annotations, 5) also numpy.ndarray
-            - each row will represent 1 detection target of the format
-            (x1, y1, x2, y2, class_id)
-    }
-    Returns a sample in the following format
-    sample = {
-        'image'          : torch.Tensor Images in NCHW normalized according to pytorch standard
-        'annotations'    : list of torch.Tensor of shape (N, num_anchors, 5)
-                           Number of objects in list corresponds to batch size
-    }
-    """
+class RetinaNetLoss(torch.nn.Module):
+    def __init__(
+        self,
+        num_classes,
+        fpn_feature_shape_fn,
+        compute_anchors,
+        focal_alpha=0.25,
+        focal_gamma=2.0,
+        huber_sigma=3.0,
+        regression_mean=0.0,
+        regression_std=0.2
+    ):
+        super(RetinaNetLoss, self).__init__()
+        self.num_classes = num_classes
+        self.fpn_feature_shape_fn = fpn_feature_shape_fn
+        self.compute_anchors = compute_anchors
 
-    # Gather image and annotations group
-    image_group       = [sample['image'] for sample in sample_group]
-    annotations_group = [sample['annotations'] for sample in sample_group]
+        self.regression_mean = regression_mean
+        self.regression_std  = regression_std
 
-    # Preprocess individual samples
-    for index, (image, annotations) in enumerate(zip(image_group, annotations_group)):
-        image, scale = transforms.resize_image_1(
-            image,
-            min_side=self.configs['image_min_side'],
-            max_side=self.configs['image_max_side']
+        self.focal_loss_fn = DetectionFocalLoss(alpha=focal_alpha, gamma=focal_gamma)
+        self.huber_loss_fn = DetectionSmoothL1Loss(sigma=huber_sigma)
+
+    def forward(self, outputs, batch):
+        # Compute targets
+        targets = compute_targets(
+            batch,
+            num_classes=self.num_classes,
+            fpn_feature_shape_fn=self.fpn_feature_shape_fn,
+            compute_anchors=self.compute_anchors,
+            regression_mean=self.regression_mean,
+            regression_std=self.regression_std
         )
-        annotations[:, :4] = annotations[:, :4] * scale
-        image_group[index] = image
-        annotations_group[index] = annotations
 
-    # Augment samples
-    #TODO: Implement functions for image augmentation
+        # Calculate losses
+        classification_loss = self.focal_loss_fn(
+            outputs['classification'],
+            targets['classification'],
+            targets['anchor_states']
+        )
 
-    # Compile samples into batches
-    max_image_shape = tuple(max(image.shape[x] for image in image_group) for x in range(2))
-    image_batch = []
-    annotations_batch = []
+        regression_loss = self.huber_loss_fn(
+            outputs['regression'],
+            targets['regression'],
+            targets['anchor_states']
+        )
 
-    for image, annotations in zip(image_group, annotations_group):
-        # Perform normalization on image and convert to tensor
-        image = transforms.pad_to(image, max_image_shape + (3,))
-        image = self.to_tensor(image)
-        image = self.normalize(image)
+        # Return None if all anchors are too be ignored
+        # Provides an easy way to skip back prop
+        if classification_loss is None:
+            return None
 
-        # Convert annotations to tensors
-        annotations = torch.Tensor(annotations)
+        # Regression loss defaults to 0 in the event that there is no positive anchors
+        if regression_loss is None:
+            regression_loss = 0.0
 
-        image_batch.append(image)
-        annotations_batch.append(annotations)
+        return classification_loss + regression_loss
 
-    # Stack image batches only as annotations batch can be differently sized
-    image_batch = torch.stack(image_batch, dim=0)
 
-    # Seems like a very long winded way to figure out if a model is training on GPU or not
-    if self.feature_pyramid_submodel.conv_P3.bias.is_cuda:
-        # Convert to cuda if needed
-        image_batch = image_batch.cuda()
-        annotations_batch = [anns.cuda() for anns in annotations_batch]
+class CollateContainer(object):
+    def __init__(
+        self,
+        configs,
+        convert_cuda
+    ):
+        """ Light weight container that contains the collate instructions
+        Meant to be picklable for ease of transfer of batch creating instructions
+        """
+        self.configs = configs
+        self.convert_cuda = convert_cuda
+        self.to_tensor = torchvision.transforms.ToTensor()
+        self.normalize = torchvision.transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225]
+        )
 
-    return {
-        'image'       : image_batch,
-        'annotations' : annotations_batch
-    }
+    def collate_fn(self, sample_group):
+        """ Collate fn requires datasets which returns samples as a dict in the following format
+        sample = {
+            'image'       : Image in HWC RGB format as a numpy.ndarray,
+            'annotations' : Annotations of shape (num_annotations, 5) also numpy.ndarray
+                - each row will represent 1 detection target of the format
+                (x1, y1, x2, y2, class_id)
+        }
+        Returns a sample in the following format
+        sample = {
+            'image'          : torch.Tensor Images in NCHW normalized according to pytorch standard
+            'annotations'    : list of torch.Tensor of shape (N, num_anchors, 5)
+                               Number of objects in list corresponds to batch size
+        }
+        """
+        # Gather image and annotations group
+        image_group       = [sample['image'] for sample in sample_group]
+        annotations_group = [sample['annotations'] for sample in sample_group]
+
+        # Preprocess individual samples
+        for index, (image, annotations) in enumerate(zip(image_group, annotations_group)):
+            image, scale = transforms.resize_image_1(
+                image,
+                min_side=self.configs['image_min_side'],
+                max_side=self.configs['image_max_side']
+            )
+            annotations[:, :4] = annotations[:, :4] * scale
+            image_group[index] = image
+            annotations_group[index] = annotations
+
+        # Augment samples
+        #TODO: Implement functions for image augmentation
+
+        # Compile samples into batches
+        max_image_hw = tuple(max(image.shape[x] for image in image_group) for x in range(2))
+        image_batch = []
+        annotations_batch = []
+
+        for image, annotations in zip(image_group, annotations_group):
+            # Perform normalization on image and convert to tensor
+            image = transforms.pad_img_to(image, max_image_hw)
+            image = self.to_tensor(image)
+            image = self.normalize(image)
+
+            # Convert annotations to tensors
+            annotations = torch.Tensor(annotations)
+
+            image_batch.append(image)
+            annotations_batch.append(annotations)
+
+        # Stack image batches only as annotations batch can be differently sized
+        image_batch = torch.stack(image_batch, dim=0)
+
+        # Seems like a very long winded way to figure out if a model is training on GPU or not
+        if self.convert_cuda:
+            # Convert to cuda if needed
+            image_batch = image_batch.cuda()
+            annotations_batch = [anns.cuda() for anns in annotations_batch]
+
+        return {
+            'image'       : image_batch,
+            'annotations' : annotations_batch
+        }
+
+
+def build_collate_container(self):
+    return CollateContainer(
+        configs=deepcopy(self.configs),
+        convert_cuda=self.feature_pyramid_submodel.conv_P3.bias.is_cuda
+    )
