@@ -232,10 +232,10 @@ def box_nms(bboxes, scores, threshold=0.5, mode='union'):
         if order.numel() == 1:
             break
 
-        xx1 = x1[order[1:]].clamp(min=x1[i])
-        yy1 = y1[order[1:]].clamp(min=y1[i])
-        xx2 = x2[order[1:]].clamp(max=x2[i])
-        yy2 = y2[order[1:]].clamp(max=y2[i])
+        xx1 = torch.where(x1[order[1:]] > x1[i], x1[order[1:]], x1[i])
+        yy1 = torch.where(y1[order[1:]] > y1[i], y1[order[1:]], y1[i])
+        xx2 = torch.where(x2[order[1:]] > x2[i], x2[order[1:]], x2[i])
+        yy2 = torch.where(y2[order[1:]] > y2[i], y2[order[1:]], y2[i])
 
         w = (xx2-xx1+1).clamp(min=0)
         h = (yy2-yy1+1).clamp(min=0)
@@ -244,7 +244,8 @@ def box_nms(bboxes, scores, threshold=0.5, mode='union'):
         if mode == 'union':
             ovr = inter / (areas[i] + areas[order[1:]] - inter)
         elif mode == 'min':
-            ovr = inter / areas[order[1:]].clamp(max=areas[i])
+            ovr = inter / areas[order[1:]]
+            ovr = torch.where(ovr > areas[i], ovr, areas[i])
         else:
             raise TypeError('Unknown nms mode: %s.' % mode)
 

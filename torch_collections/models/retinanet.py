@@ -116,11 +116,11 @@ class RetinaNet(torch.nn.Module):
         feature_shapes = self.fpn_feature_shape_fn(batch['image'].shape)
 
         # Compute base anchors
-        anchors = self.compute_anchors(current_batch_size, feature_shapes)
+        anchors = self.compute_anchors(batch['image'].shape[0], feature_shapes)
 
         # Apply predicted regression to anchors
         boxes = self.regress_boxes(anchors, regression)
-        boxes = self.clip_boxes(current_batch_image_shape, anchors)
+        boxes = self.clip_boxes(batch['image'].shape, boxes)
 
         detections = self.filter_detections(boxes, classification)
 

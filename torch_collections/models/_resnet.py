@@ -15,15 +15,15 @@ def resnet_fpn_feature_shape_fn(img_shape):
     """
     C0_shape = img_shape[-2:]
 
-    C1_shape = (math.ceil(C0_shape[0]), math.ceil(C0_shape[1]))
-    C2_shape = (math.ceil(C1_shape[0]), math.ceil(C1_shape[1]))
+    C1_shape = (math.ceil(C0_shape[0] / 2), math.ceil(C0_shape[1] / 2))
+    C2_shape = (math.ceil(C1_shape[0] / 2), math.ceil(C1_shape[1] / 2))
 
-    P3_shape = (math.ceil(C2_shape[0]), math.ceil(C2_shape[1]))
-    P4_shape = (math.ceil(P3_shape[0]), math.ceil(P3_shape[1]))
-    P5_shape = (math.ceil(P4_shape[0]), math.ceil(P4_shape[1]))
+    P3_shape = (math.ceil(C2_shape[0] / 2), math.ceil(C2_shape[1] / 2))
+    P4_shape = (math.ceil(P3_shape[0] / 2), math.ceil(P3_shape[1] / 2))
+    P5_shape = (math.ceil(P4_shape[0] / 2), math.ceil(P4_shape[1] / 2))
 
-    P6_shape = (math.ceil(P5_shape[0]), math.ceil(P5_shape[1]))
-    P7_shape = (math.ceil(P6_shape[0]), math.ceil(P6_shape[1]))
+    P6_shape = (math.ceil(P5_shape[0] / 2), math.ceil(P5_shape[1] / 2))
+    P7_shape = (math.ceil(P6_shape[0] / 2), math.ceil(P6_shape[1] / 2))
 
     return P3_shape, P4_shape, P5_shape, P6_shape, P7_shape
 
