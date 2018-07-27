@@ -1,3 +1,2 @@
 from ._detection_focal_loss import DetectionFocalLoss
 from ._detection_smooth_l1_loss import DetectionSmoothL1Loss
-from ._retinanet_loss import RetinaNetLoss

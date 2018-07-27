@@ -1,5 +1,6 @@
 from __future__ import division
 
+import math
 import cv2
 import numpy as np
 
@@ -28,15 +29,37 @@ def resize_image_1(img, min_side=800, max_side=1333):
 
     return img, scale
 
-def pad_to(img, target_shape):
-    """ Takes an numpy.ndarray image of the format HWC and pads it to the target_shape
+
+def pad_img_to(img, target_hw, location='upper-left', mode='constant'):
+    """ Takes an numpy.ndarray image of the format HWC and pads it to the target_hw
+
+    Args
+        img       : numpy.ndarray image of the format HWC or HW
+        target_hw : target height width (list-like of size 2)
+        location  : location of original image after padding, option of 'upper-left' and 'center'
+        mode      : mode of padding in https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.pad.html
+    Returns
+        padded image
+
     The original image will be placed in the top left corner
     """
+    if len(img.shape) == 3:
+        pad = [None, None, (0, 0)]
+    else:
+        pad = [None, None]
 
-    ndim = len(img.shape)
-    pad = [None] * ndim
+    if location == 'upper-left':
+        for i in range(2):
+            pad[i] = (0, target_hw[i] - img.shape[i])
 
-    for i in range(ndim):
-        pad[i] = (0, target_shape[i] - img.shape[i])
+    elif location == 'center':
+        for i in range(2):
+            excess = target_hw[i] - img.shape[i]
+            x1 = math.ceil(excess / 2)
+            x2 = excess - x1
+            pad[i] = (x1, x2)
 
-    return np.pad(img, pad, 'constant')
+    else:
+        raise ValueError('{} is not a valid location argument'.format(location))
+
+    return np.pad(img, pad, mode=mode)
