@@ -322,13 +322,13 @@ class CollateContainer(object):
         #TODO: Implement functions for image augmentation
 
         # Compile samples into batches
-        max_image_shape = tuple(max(image.shape[x] for image in image_group) for x in range(2))
+        max_image_hw = tuple(max(image.shape[x] for image in image_group) for x in range(2))
         image_batch = []
         annotations_batch = []
 
         for image, annotations in zip(image_group, annotations_group):
             # Perform normalization on image and convert to tensor
-            image = transforms.pad_to(image, max_image_shape + (3,))
+            image = transforms.pad_img_to(image, max_image_hw)
             image = self.to_tensor(image)
             image = self.normalize(image)
 
