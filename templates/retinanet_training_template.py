@@ -1,3 +1,7 @@
+""" Sample training script for retinanet training on 1 GPU, Multi GPU training
+has not been implemented yet due to difficulties in securing resources
+"""
+
 import torch
 
 from torch_collections.models.retinanet import RetinaNet
@@ -6,8 +10,7 @@ from torch_collections.losses import DetectionFocalLoss, DetectionSmoothL1Loss
 
 def main():
     # Load dataset
-    #### INSERT YOUR DATASET HERE ####
-
+    ########## INSERT YOUR DATASET HERE ##########
     # dataset is a torch.utils.data.Dataset object
     # dataset should output samples of dict type with keys 'image' and 'annotations'
     # Here is what a sample would look like
@@ -17,13 +20,15 @@ def main():
     #                     Each annotation is of the format (x1, y1, x2, y2, class_id)
     # }
     dataset = YOUR_DETECTION_DATASET
-
-    ##################################
+    ##############################################
 
     # Load model with initial weights
-    #### INSERT NUMBER OF CLASSES HERE ####
+    ########## INSERT NUMBER OF CLASSES HERE ##########
     retinanet = RetinaNet(num_classes=NUMBER_OF_CLASSES)
-    #######################################
+    if torch.cuda.is_available():
+        device = torch.device('cuda:0')
+        retinanet = retinanet.to(device)
+    ###################################################
 
     # Create dataset iterator
     collate_container = retinanet.build_collate_container()

@@ -79,8 +79,9 @@ def shift_anchors(shape, stride, anchors):
     shift_x = torch.arange(0 + 0.5, shape[1] + 0.5, step=1) * stride
     shift_y = torch.arange(0 + 0.5, shape[0] + 0.5, step=1) * stride
     if anchors.is_cuda:
-        shift_x = shift_x.cuda()
-        shift_y = shift_y.cuda()
+        device_idx = torch.device_of(anchors).idx
+        shift_x = shift_x.cuda(device_idx)
+        shift_y = shift_y.cuda(device_idx)
 
     shift_x, shift_y = meshgrid2d(shift_x, shift_y)
 
