@@ -5,7 +5,6 @@ has not been implemented yet due to difficulties in securing resources
 import torch
 
 from torch_collections.models.retinanet import RetinaNet
-from torch_collections.losses import DetectionFocalLoss, DetectionSmoothL1Loss
 
 
 def main():
