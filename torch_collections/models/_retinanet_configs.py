@@ -25,22 +25,6 @@ _c.pyramid_feature_size        = 256
 _c.classification_feature_size = 256
 _c.regression_feature_size     = 256
 
-#### collate_fn configs
-_c.image_min_side = 800
-_c.image_max_side = 1333
-
-_c.allow_transform = False
-_c.min_rotation    = -0.1
-_c.max_rotation    =  0.1
-_c.min_translation = (-0.1, -0.1)
-_c.max_translation = ( 0.1,  0.1)
-_c.min_shear       = -0.1
-_c.max_shear       =  0.1
-_c.min_scaling     = (0.9, 0.9)
-_c.max_scaling     = (1.1, 1.1)
-_c.flip_x_chance   = 0.5
-_c.flip_y_chance   = 0.0
-
 ################################################################################
 #### End of configurable parameters
 

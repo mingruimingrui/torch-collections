@@ -18,8 +18,7 @@ from ._retinanet import (
     DefaultRegressionModel,
     DefaultClassificationModel,
     ComputeAnchors,
-    RetinaNetLoss,
-    build_collate_container
+    RetinaNetLoss
 )
 
 # Common detection submodules
@@ -125,8 +124,3 @@ class RetinaNet(torch.nn.Module):
         detections = self.filter_detections(boxes, classification)
 
         return detections
-
-    ###########################################################################
-    #### Start of collate_fn
-
-    build_collate_container = build_collate_container
