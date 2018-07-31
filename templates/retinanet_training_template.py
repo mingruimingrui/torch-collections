@@ -35,7 +35,7 @@ def main():
     for epoch in range(50):
         dataset_iterator = dataset_loader.__iter__()
 
-        for step_nb in range(10000):
+        for step_nb in range(len(dataset_loader)):
             # Get sample
             batch = dataset_iterator.next()
             if torch.cuda.is_available():
