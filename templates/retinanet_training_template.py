@@ -25,8 +25,7 @@ def main():
     ########## INSERT NUMBER OF CLASSES HERE ##########
     retinanet = RetinaNet(num_classes=NUMBER_OF_CLASSES)
     if torch.cuda.is_available():
-        device = torch.device('cuda:0')
-        retinanet = retinanet.to(device)
+        retinanet = retinanet.cuda()
     ###################################################
 
     # Initialize optimizer
@@ -35,10 +34,10 @@ def main():
     for epoch in range(50):
         dataset_iterator = dataset_loader.__iter__()
 
-        for step_nb in range(len(dataset_loader)):
-            # Get sample
-            batch = dataset_iterator.next()
+        for batch in dataset_loader:
             if torch.cuda.is_available():
+                batch['image'] = batch['image'].cuda()
+                batch['annotations'] = [ann.cuda() for ann in batch['annotations']]
 
             # Zero optimizer
             optimizer.zero_grad()
