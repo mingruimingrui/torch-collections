@@ -48,7 +48,7 @@ class FilterDetections(torch.nn.Module):
                     all_keep.append({
                         'box'  : filtered_boxes[index],
                         'score': filtered_scores[index],
-                        'label': torch.IntTensor([c])
+                        'label': torch.IntTensor([c])[0]
                     })
 
             if not len(all_keep):
