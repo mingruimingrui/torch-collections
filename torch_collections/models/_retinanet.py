@@ -45,9 +45,9 @@ def compute_targets(
         labels_batch.append(labels)
         states_batch.append(anchor_states)
 
-        regression_batch = torch.stack(regression_batch, dim=0)
-        labels_batch     = torch.stack(labels_batch    , dim=0)
-        states_batch     = torch.stack(states_batch    , dim=0)
+    regression_batch = torch.stack(regression_batch, dim=0)
+    labels_batch     = torch.stack(labels_batch    , dim=0)
+    states_batch     = torch.stack(states_batch    , dim=0)
 
     return {
         'regression'     : regression_batch,
