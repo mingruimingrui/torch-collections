@@ -27,14 +27,31 @@ from ..modules import RegressBoxes, ClipBoxes, FilterDetections
 
 class RetinaNet(torch.nn.Module):
     def __init__(self, num_classes, **kwargs):
-        """ Construct a RetinaNet model for training
-
+        """ Constructs a RetinaNet model
         Args
             Refer to torch_collections.models._retinanet_configs.py
         Returns
-            training_model : a RetinaNet training model
-                - Outputs of this model are [anchor_regressions, anchor_classifications]
-                - Shapes would be [(batch_size, num_anchors, 4), (batch_size, num_anchors, num_classes)]
+            A RetinaNet model whos inputs/outputs are as follows
+
+            Training
+                - Input of this model is a dict of the following format
+                    {
+                        'images'      : Tensor of images in the format NCHW with torch standard preprocessing,
+                        'annotations' : list of tensors representing annotations
+                                        each annotation tensor is of the shape [n_annotations, 5]
+                                        the columns are [x1, y1, x2, y2, class_id]
+                    }
+                - Output of this model is a single tensor for loss
+
+            Eval
+                - Input of this model is a dict of the following format
+                    {'images'      : Tensor of images in the format NCHW with torch standard preprocessing}
+                - Output of this model is a list of detections, each detection is a dictionary of the format
+                    {
+                        'boxes'  : (num_detections, 4) shaped tensor for [x1, y1, x2, y2] of all detections,
+                        'scores' : (num_detections) shaped tensor for scores of all detections,
+                        'labels' : (num_detections) shaped tensor for labels of all detections
+                    }
         """
         super(RetinaNet, self).__init__()
 
