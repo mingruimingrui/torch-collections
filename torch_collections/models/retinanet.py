@@ -55,11 +55,11 @@ class RetinaNet(torch.nn.Module):
         """
         super(RetinaNet, self).__init__()
 
-        # Make config file
+        # Make config
         kwargs['num_classes'] = num_classes
         self.configs = make_configs(**kwargs)
 
-        # Make helper functions and variables
+        # Make helper functions and modules
         self.fpn_feature_shape_fn = build_fpn_feature_shape_fn(self.configs['backbone'])
         self.build_modules()
 
