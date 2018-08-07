@@ -15,8 +15,8 @@ from ._backbone import (
 # RetinaNet submodels
 from ._retinanet import (
     FeaturePyramidSubmodel,
-    DefaultRegressionModel,
-    DefaultClassificationModel,
+    DynamicRegressionModel,
+    DynamicClassificationModel,
     ComputeAnchors,
     RetinaNetLoss
 )
@@ -73,16 +73,22 @@ class RetinaNet(torch.nn.Module):
         )
 
         # Make regression and classification models
-        self.regression_submodel = DefaultRegressionModel(
+        self.regression_submodel = DynamicRegressionModel(
             self.configs['num_anchors'],
             pyramid_feature_size=self.configs['pyramid_feature_size'],
-            regression_feature_size=self.configs['regression_feature_size']
+            regression_feature_size=self.configs['regression_feature_size'],
+            growth_rate=self.configs['regression_growth_rate'],
+            num_layers=self.configs['regression_num_layers'],
+            block_type=self.configs['regression_block_type']
         )
-        self.classification_submodel = DefaultClassificationModel(
+        self.classification_submodel = DynamicClassificationModel(
             self.configs['num_classes'],
             self.configs['num_anchors'],
             pyramid_feature_size=self.configs['pyramid_feature_size'],
-            classification_feature_size=self.configs['classification_feature_size']
+            classification_feature_size=self.configs['classification_feature_size'],
+            growth_rate=self.configs['classification_growth_rate'],
+            num_layers=self.configs['classification_num_layers'],
+            block_type=self.configs['classification_block_type']
         )
 
         # Create function to compute anchors based on feature shapes
