@@ -56,6 +56,54 @@ def compute_targets(
     }
 
 
+def _init_zero(t):
+    torch.nn.init.constant_(t, 0.0)
+
+
+def _init_uniform(t):
+    torch.nn.init.normal_(t, 0.0, 0.01)
+
+
+def _make_dynamic_block(
+    type='fc',
+    num_layers=4,
+    input_size=256,
+    internal_size=256,
+    growth_rate=64
+):
+    if type == 'fc':
+        block = ConvBlock2d(
+            input_feature_size=input_size,
+            output_feature_size=internal_size,
+            internal_feature_size=internal_size,
+            num_layers=num_layers,
+            batch_norm=False,
+            dropout=None,
+            bias=True,
+            bias_initializer=_init_zero,
+            weight_initializer=_init_uniform
+        )
+
+    elif type == 'dense':
+        block = DenseBlock2d(
+            input_feature_size=input_size,
+            num_layers=num_layers,
+            growth_rate=growth_rate,
+            batch_norm=False,
+            transition=False,
+            dropout=None,
+            bias=False,
+            weight_initializer=_init_uniform
+        )
+
+    else:
+        raise ValueError('type must be either fc or dense, cannot be {}'.format(type))
+
+    import pdb; pdb.set_trace()
+
+    return block
+
+
 class FeaturePyramidSubmodel(torch.nn.Module):
     def __init__(self, backbone_channel_sizes, feature_size=256):
         super(FeaturePyramidSubmodel, self).__init__()
@@ -180,6 +228,80 @@ class DefaultClassificationModel(torch.nn.Module):
             x = getattr(self, 'conv{}'.format(i))(x)
             x = self.relu(x)
         x = self.conv5(x)
+        x = self.sigmoid(x)
+        return x.permute(0, 2, 3, 1).reshape(x.shape[0], -1, self.num_classes)
+
+
+def DynamicRegressionModel(torch.nn.Module):
+    def __init__(
+        self,
+        num_anchors,
+        pyramid_feature_size=256,
+        regression_feature_size=256,
+        growth_rate=64,
+        num_layers=4,
+        type='fc'
+    ):
+        super(DynamicRegressionModel, self).__init__()
+
+        # Make all layers
+        self.block = _make_block(
+            type=type,
+            num_layers=num_layers,
+            input_size=pyramid_feature_size,
+            internal_size=regression_feature_size,
+            growth_rate=growth_rate
+        )
+        self.relu = torch.nn.ReLU(inplace=False)
+        self.conv_final = torch.nn.Conv2d(classification_feature_size, num_anchors * 4, kernel_size=3, stride=1, padding=1)
+
+        # Initialize regression output to be small
+        _init_zero(self.conv_final.bias)
+        _init_uniform(self.conv_final.weight)
+
+    def forward(self, x):
+        x = self.block(x)
+        x = self.conv_final(x)
+        return x.permute(0, 2, 3, 1).reshape(x.shape[0], -1, 4)
+
+
+def DynamicClassificationModel(torch.nn.Module):
+    def __init__(
+        self,
+        num_classes,
+        num_anchors,
+        pyramid_feature_size=256,
+        classification_feature_size=256,
+        growth_rate=64,
+        num_layers=4,
+        type='fc',
+        prior_probability=0.01
+    ):
+        super(DynamicClassificationModel, self).__init__()
+        self.num_classes = num_classes
+
+        # Make all layers
+        self.block = _make_block(
+            type=type,
+            num_layers=num_layers,
+            input_size=pyramid_feature_size,
+            internal_size=classification_feature_size,
+            growth_rate=growth_rate
+        )
+        self.sigmoid = torch.nn.Sigmoid()
+        self.conv_final = torch.nn.Conv2d(classification_feature_size, num_anchors * num_classes, kernel_size=3, stride=1, padding=1)
+
+        # Initialize classification output to 0.01
+        # kernel ~ 0.0
+        # bias   ~ -log((1 - 0.01) / 0.01)  So that output is 0.01 after sigmoid
+        kernel = self.conv_final.weight
+        bias   = self.conv_final.bias
+        kernel.data.fill_(0.0)
+        bias.data.fill_(-math.log((1 - 0.01) / 0.01)
+
+    def forward(self, x):
+        x = self.block(x)
+        x = self.conv_final(x)
         x = self.sigmoid(x)
         return x.permute(0, 2, 3, 1).reshape(x.shape[0], -1, self.num_classes)
 
