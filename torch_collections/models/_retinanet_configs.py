@@ -14,32 +14,24 @@ _c.name        = 'retinanet'
 _c.num_classes = None
 
 _c.backbone        = 'resnet50'
-_c.freeze_backbone = False
+_c.freeze_backbone = False  # Does not actually work at the moment will implement in future
 
 _c.anchor_sizes   = [32, 64, 128, 256, 512]
 _c.anchor_strides = [8, 16, 32, 64, 128]
 _c.anchor_ratios  = [0.5, 1., 2.]
 _c.anchor_scales  = [2. ** 0., 2. ** (1. / 3.), 2. ** (2. / 3.)]
 
-_c.pyramid_feature_size        = 256
-_c.classification_feature_size = 256
-_c.regression_feature_size     = 256
+_c.pyramid_feature_size = 256
 
-#### collate_fn configs
-_c.image_min_side = 800
-_c.image_max_side = 1333
+_c.regression_block_type   = 'fc'  # one of ['fc', 'dense']
+_c.regression_num_layers   = 4
+_c.regression_feature_size = 256  # Regression model internal channel size (only for 'fc')
+_c.regression_growth_rate  = 64   # Regression model channel growth rate (only for 'dense')
 
-_c.allow_transform = False
-_c.min_rotation    = -0.1
-_c.max_rotation    =  0.1
-_c.min_translation = (-0.1, -0.1)
-_c.max_translation = ( 0.1,  0.1)
-_c.min_shear       = -0.1
-_c.max_shear       =  0.1
-_c.min_scaling     = (0.9, 0.9)
-_c.max_scaling     = (1.1, 1.1)
-_c.flip_x_chance   = 0.5
-_c.flip_y_chance   = 0.0
+_c.classification_block_type   = 'fc'  # one of ['fc', 'dense']
+_c.classification_num_layers   = 4
+_c.classification_feature_size = 256  # Classification model internal channel size (only for 'fc')
+_c.classification_growth_rate  = 64   # Classification model channel growth rate (only for 'dense')
 
 ################################################################################
 #### End of configurable parameters

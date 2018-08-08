@@ -5,40 +5,28 @@ has not been implemented yet due to difficulties in securing resources
 import torch
 
 from torch_collections.models.retinanet import RetinaNet
-from torch_collections.losses import DetectionFocalLoss, DetectionSmoothL1Loss
 
 
 def main():
-    # Load dataset
-    ########## INSERT YOUR DATASET HERE ##########
-    # dataset is a torch.utils.data.Dataset object
-    # dataset should output samples of dict type with keys 'image' and 'annotations'
-    # Here is what a sample would look like
-    # sample = {
-    #     'image'       : A numpy.ndarray image of dtype uint8 in RGB, HWC format and
-    #     'annotations' : A numpy.ndarray of shape (number_of_annotations, 5)
-    #                     Each annotation is of the format (x1, y1, x2, y2, class_id)
+    # Load dataset and create dataset loader
+    ########## INSERT YOUR DATASET LOADER HERE ##########
+    # dataset_loader should generate batch of data
+    # Here is what a batch would look like
+    # batch = {
+    #     'image'       : A torch.Tensor of images in the format NCHW
+    #     'annotations' : A list of annotations for each image, list is of length N
+    #                     Each annotation is a torch.Tensor of shape (number_of_annotations, 5)
+    #                     and of format (x1, y1, x2, y2, class_id)
     # }
-    dataset = YOUR_DETECTION_DATASET
-    ##############################################
+    dataset_loader = YOUR_DETECTION_DATASET_LOADER
+    #####################################################
 
     # Load model with initial weights
     ########## INSERT NUMBER OF CLASSES HERE ##########
     retinanet = RetinaNet(num_classes=NUMBER_OF_CLASSES)
     if torch.cuda.is_available():
-        device = torch.device('cuda:0')
-        retinanet = retinanet.to(device)
+        retinanet = retinanet.cuda()
     ###################################################
-
-    # Create dataset iterator
-    collate_container = retinanet.build_collate_container()
-    dataset_loader = torch.utils.data.DataLoader(
-        dataset,
-        batch_size=1,
-        shuffle=True,
-        collate_fn=collate_container.collate_fn,
-        num_workers=2,
-    )
 
     # Initialize optimizer
     optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, retinanet.parameters()), lr=0.00001)
@@ -46,9 +34,12 @@ def main():
     for epoch in range(50):
         dataset_iterator = dataset_loader.__iter__()
 
-        for step_nb in range(10000):
-            # Get sample and zero optimizer
-            batch = dataset_iterator.next()
+        for batch in dataset_loader:
+            if torch.cuda.is_available():
+                batch['image'] = batch['image'].cuda()
+                batch['annotations'] = [ann.cuda() for ann in batch['annotations']]
+
+            # Zero optimizer
             optimizer.zero_grad()
 
             # forward

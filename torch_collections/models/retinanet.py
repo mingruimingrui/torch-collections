@@ -15,11 +15,10 @@ from ._backbone import (
 # RetinaNet submodels
 from ._retinanet import (
     FeaturePyramidSubmodel,
-    DefaultRegressionModel,
-    DefaultClassificationModel,
+    DynamicRegressionModel,
+    DynamicClassificationModel,
     ComputeAnchors,
-    RetinaNetLoss,
-    build_collate_container
+    RetinaNetLoss
 )
 
 # Common detection submodules
@@ -28,22 +27,39 @@ from ..modules import RegressBoxes, ClipBoxes, FilterDetections
 
 class RetinaNet(torch.nn.Module):
     def __init__(self, num_classes, **kwargs):
-        """ Construct a RetinaNet model for training
-
+        """ Constructs a RetinaNet model
         Args
             Refer to torch_collections.models._retinanet_configs.py
         Returns
-            training_model : a RetinaNet training model
-                - Outputs of this model are [anchor_regressions, anchor_classifications]
-                - Shapes would be [(batch_size, num_anchors, 4), (batch_size, num_anchors, num_classes)]
+            A RetinaNet model whos inputs/outputs are as follows
+
+            Training
+                - Input of this model is a dict of the following format
+                    {
+                        'images'      : Tensor of images in the format NCHW with torch standard preprocessing,
+                        'annotations' : list of tensors representing annotations
+                                        each annotation tensor is of the shape [n_annotations, 5]
+                                        the columns are [x1, y1, x2, y2, class_id]
+                    }
+                - Output of this model is a single tensor for loss
+
+            Eval
+                - Input of this model is a dict of the following format
+                    {'images'      : Tensor of images in the format NCHW with torch standard preprocessing}
+                - Output of this model is a list of detections, each detection is a dictionary of the format
+                    {
+                        'boxes'  : (num_detections, 4) shaped tensor for [x1, y1, x2, y2] of all detections,
+                        'scores' : (num_detections) shaped tensor for scores of all detections,
+                        'labels' : (num_detections) shaped tensor for labels of all detections
+                    }
         """
         super(RetinaNet, self).__init__()
 
-        # Make config file
+        # Make config
         kwargs['num_classes'] = num_classes
         self.configs = make_configs(**kwargs)
 
-        # Make helper functions and variables
+        # Make helper functions and modules
         self.fpn_feature_shape_fn = build_fpn_feature_shape_fn(self.configs['backbone'])
         self.build_modules()
 
@@ -57,16 +73,22 @@ class RetinaNet(torch.nn.Module):
         )
 
         # Make regression and classification models
-        self.regression_submodel = DefaultRegressionModel(
+        self.regression_submodel = DynamicRegressionModel(
             self.configs['num_anchors'],
             pyramid_feature_size=self.configs['pyramid_feature_size'],
-            regression_feature_size=self.configs['regression_feature_size']
+            regression_feature_size=self.configs['regression_feature_size'],
+            growth_rate=self.configs['regression_growth_rate'],
+            num_layers=self.configs['regression_num_layers'],
+            block_type=self.configs['regression_block_type']
         )
-        self.classification_submodel = DefaultClassificationModel(
+        self.classification_submodel = DynamicClassificationModel(
             self.configs['num_classes'],
             self.configs['num_anchors'],
             pyramid_feature_size=self.configs['pyramid_feature_size'],
-            classification_feature_size=self.configs['classification_feature_size']
+            classification_feature_size=self.configs['classification_feature_size'],
+            growth_rate=self.configs['classification_growth_rate'],
+            num_layers=self.configs['classification_num_layers'],
+            block_type=self.configs['classification_block_type']
         )
 
         # Create function to compute anchors based on feature shapes
@@ -125,8 +147,3 @@ class RetinaNet(torch.nn.Module):
         detections = self.filter_detections(boxes, classification)
 
         return detections
-
-    ###########################################################################
-    #### Start of collate_fn
-
-    build_collate_container = build_collate_container

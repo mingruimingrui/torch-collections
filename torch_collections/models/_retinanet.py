@@ -1,14 +1,11 @@
 """ RetinaNet submodules """
 
 import math
-from copy import deepcopy
 
 import torch
-import torchvision
 
-from ..modules import Anchors
+from ..modules import Anchors, ConvBlock2d, DenseBlock2d
 from ..losses import DetectionFocalLoss, DetectionSmoothL1Loss
-from ..utils import transforms
 from ..utils import anchors as utils_anchors
 
 
@@ -48,15 +45,81 @@ def compute_targets(
         labels_batch.append(labels)
         states_batch.append(anchor_states)
 
-        regression_batch = torch.stack(regression_batch, dim=0)
-        labels_batch     = torch.stack(labels_batch    , dim=0)
-        states_batch     = torch.stack(states_batch    , dim=0)
+    regression_batch = torch.stack(regression_batch, dim=0)
+    labels_batch     = torch.stack(labels_batch    , dim=0)
+    states_batch     = torch.stack(states_batch    , dim=0)
 
     return {
         'regression'     : regression_batch,
         'classification' : labels_batch,
         'anchor_states'  : states_batch
     }
+
+
+def _init_zero(t):
+    torch.nn.init.constant_(t, 0.0)
+
+
+def _init_uniform(t):
+    torch.nn.init.normal_(t, 0.0, 0.01)
+
+
+def _make_dynamic_block(
+    block_type='fc',
+    num_layers=4,
+    input_size=256,
+    internal_size=256,
+    growth_rate=64
+):
+    """ Creates a 2d conv block to extract features based on block type
+    Args
+        block_type    : Defines the type of conv block this this option from ['fc', 'dense']
+        num_layers    : Number of layers in this dense block
+        input_size    : Input channel size
+        internal_size : Model internal channel size (only used if block type is 'fc')
+        growth_rate   : Model channel growth rate (only used if block type is 'dense')
+    Returns
+        block       : The conv block which takes a [N, C0, H, W] format tensor as an input
+                      Outputs [N, C1, H, W] shaped tensor with C1 = output_size
+        output_size : The number of channels block will output
+    """
+    if block_type == 'fc':
+        # The default block according to the https://arxiv.org/abs/1708.02002 paper
+        # Uses bias in the fully connected layers
+        block = ConvBlock2d(
+            input_feature_size=input_size,
+            output_feature_size=internal_size,
+            internal_feature_size=internal_size,
+            num_layers=num_layers,
+            batch_norm=False,
+            dropout=None,
+            bias=True,
+            bias_initializer=_init_zero,
+            weight_initializer=_init_uniform
+        )
+
+    elif block_type == 'dense':
+        # Dense blocks from the densenet paper uses bias-less conv layers
+        block = DenseBlock2d(
+            input_feature_size=input_size,
+            num_layers=num_layers,
+            growth_rate=growth_rate,
+            batch_norm=False,
+            transition=False,
+            dropout=None,
+            bias=False,
+            weight_initializer=_init_uniform
+        )
+
+    else:
+        raise ValueError('block_type must be either fc or dense, cannot be {}'.format(block_type))
+
+    # Now to get the output channel size
+    dummy_input = torch.Tensor(1, input_size, 1, 1)
+    dummy_output = block(dummy_input)
+    output_size = dummy_output.shape[1]
+
+    return block, output_size
 
 
 class FeaturePyramidSubmodel(torch.nn.Module):
@@ -105,84 +168,88 @@ class FeaturePyramidSubmodel(torch.nn.Module):
         return P3, P4, P5, P6, P7
 
 
-class DefaultRegressionModel(torch.nn.Module):
+class DynamicRegressionModel(torch.nn.Module):
     def __init__(
         self,
         num_anchors,
         pyramid_feature_size=256,
-        regression_feature_size=256
+        regression_feature_size=256,
+        growth_rate=64,
+        num_layers=4,
+        block_type='fc'
     ):
-        super(DefaultRegressionModel, self).__init__()
+        super(DynamicRegressionModel, self).__init__()
 
         # Make all layers
-        self.relu  = torch.nn.ReLU(inplace=False)
-        self.conv1 = torch.nn.Conv2d(pyramid_feature_size   , regression_feature_size, kernel_size=3, stride=1, padding=1)
-        self.conv2 = torch.nn.Conv2d(regression_feature_size, regression_feature_size, kernel_size=3, stride=1, padding=1)
-        self.conv3 = torch.nn.Conv2d(regression_feature_size, regression_feature_size, kernel_size=3, stride=1, padding=1)
-        self.conv4 = torch.nn.Conv2d(regression_feature_size, regression_feature_size, kernel_size=3, stride=1, padding=1)
-        self.conv5 = torch.nn.Conv2d(regression_feature_size, num_anchors * 4        , kernel_size=3, stride=1, padding=1)
+        self.block, block_output_size = _make_dynamic_block(
+            block_type=block_type,
+            num_layers=num_layers,
+            input_size=pyramid_feature_size,
+            internal_size=regression_feature_size,
+            growth_rate=growth_rate
+        )
+        self.relu = torch.nn.ReLU(inplace=False)
+        self.conv_final = torch.nn.Conv2d(
+            block_output_size,
+            num_anchors * 4,
+            kernel_size=3,
+            stride=1,
+            padding=1,
+            bias=False
+        )
 
-        # Initialize weights
-        for i in range(1, 6):
-            # kernel ~ normal(mean=0.0, std=0.01)
-            # bias   ~ 0.0
-            kernel = getattr(self, 'conv{}'.format(i)).weight
-            bias   = getattr(self, 'conv{}'.format(i)).bias
-            torch.nn.init.normal_(kernel, 0.0, 0.01)
-            bias.data.fill_(0.0)
+        # Initialize regression output to be small
+        _init_uniform(self.conv_final.weight)
 
     def forward(self, x):
-        for i in range(1, 5):
-            x = getattr(self, 'conv{}'.format(i))(x)
-            x = self.relu(x)
-        x = self.conv5(x)
+        x = self.block(x)
+        x = self.conv_final(x)
         return x.permute(0, 2, 3, 1).reshape(x.shape[0], -1, 4)
 
 
-class DefaultClassificationModel(torch.nn.Module):
+class DynamicClassificationModel(torch.nn.Module):
     def __init__(
         self,
         num_classes,
         num_anchors,
         pyramid_feature_size=256,
-        prior_probability=0.01,
-        classification_feature_size=256
+        classification_feature_size=256,
+        growth_rate=64,
+        num_layers=4,
+        block_type='fc',
+        prior_probability=0.01
     ):
-        super(DefaultClassificationModel, self).__init__()
+        super(DynamicClassificationModel, self).__init__()
         self.num_classes = num_classes
 
         # Make all layers
-        self.relu    = torch.nn.ReLU(inplace=False)
+        self.block, block_output_size = _make_dynamic_block(
+            block_type=block_type,
+            num_layers=num_layers,
+            input_size=pyramid_feature_size,
+            internal_size=classification_feature_size,
+            growth_rate=growth_rate
+        )
         self.sigmoid = torch.nn.Sigmoid()
-        self.conv1   = torch.nn.Conv2d(pyramid_feature_size       , classification_feature_size, kernel_size=3, stride=1, padding=1)
-        self.conv2   = torch.nn.Conv2d(classification_feature_size, classification_feature_size, kernel_size=3, stride=1, padding=1)
-        self.conv3   = torch.nn.Conv2d(classification_feature_size, classification_feature_size, kernel_size=3, stride=1, padding=1)
-        self.conv4   = torch.nn.Conv2d(classification_feature_size, classification_feature_size, kernel_size=3, stride=1, padding=1)
-        self.conv5   = torch.nn.Conv2d(classification_feature_size, num_anchors * num_classes  , kernel_size=3, stride=1, padding=1)
+        self.conv_final = torch.nn.Conv2d(
+            block_output_size,
+            num_anchors * num_classes,
+            kernel_size=3,
+            stride=1,
+            padding=1
+        )
 
-        # Initialize weights
-        for i in range(1, 5):
-            # kernel ~ normal(mean=0.0, std=0.01)
-            # bias   ~ 0.0
-            kernel = getattr(self, 'conv{}'.format(i)).weight
-            bias   = getattr(self, 'conv{}'.format(i)).bias
-            torch.nn.init.normal_(kernel, 0.0, 0.01)
-            bias.data.fill_(0.0)
-
-        # Initialize classification output differently
+        # Initialize classification output to 0.01
         # kernel ~ 0.0
-        # bias   ~ -log((1 - 0.01) / 0.01)
-        #     So that output is 0.01 after sigmoid
-        kernel = self.conv5.weight
-        bias   = self.conv5.bias
+        # bias   ~ -log((1 - 0.01) / 0.01)  So that output is 0.01 after sigmoid
+        kernel = self.conv_final.weight
+        bias   = self.conv_final.bias
         kernel.data.fill_(0.0)
         bias.data.fill_(-math.log((1 - 0.01) / 0.01))
 
     def forward(self, x):
-        for i in range(1,5):
-            x = getattr(self, 'conv{}'.format(i))(x)
-            x = self.relu(x)
-        x = self.conv5(x)
+        x = self.block(x)
+        x = self.conv_final(x)
         x = self.sigmoid(x)
         return x.permute(0, 2, 3, 1).reshape(x.shape[0], -1, self.num_classes)
 
@@ -269,92 +336,3 @@ class RetinaNetLoss(torch.nn.Module):
             regression_loss = 0.0
 
         return classification_loss + regression_loss
-
-
-class CollateContainer(object):
-    def __init__(
-        self,
-        configs,
-        convert_cuda
-    ):
-        """ Light weight container that contains the collate instructions
-        Meant to be picklable for ease of transfer of batch creating instructions
-        """
-        self.configs = configs
-        self.convert_cuda = convert_cuda
-        self.to_tensor = torchvision.transforms.ToTensor()
-        self.normalize = torchvision.transforms.Normalize(
-            mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225]
-        )
-
-    def collate_fn(self, sample_group):
-        """ Collate fn requires datasets which returns samples as a dict in the following format
-        sample = {
-            'image'       : Image in HWC RGB format as a numpy.ndarray,
-            'annotations' : Annotations of shape (num_annotations, 5) also numpy.ndarray
-                - each row will represent 1 detection target of the format
-                (x1, y1, x2, y2, class_id)
-        }
-        Returns a sample in the following format
-        sample = {
-            'image'          : torch.Tensor Images in NCHW normalized according to pytorch standard
-            'annotations'    : list of torch.Tensor of shape (N, num_anchors, 5)
-                               Number of objects in list corresponds to batch size
-        }
-        """
-        # Gather image and annotations group
-        image_group       = [sample['image'] for sample in sample_group]
-        annotations_group = [sample['annotations'] for sample in sample_group]
-
-        # Preprocess individual samples
-        for index, (image, annotations) in enumerate(zip(image_group, annotations_group)):
-            image, scale = transforms.resize_image_1(
-                image,
-                min_side=self.configs['image_min_side'],
-                max_side=self.configs['image_max_side']
-            )
-            annotations[:, :4] = annotations[:, :4] * scale
-            image_group[index] = image
-            annotations_group[index] = annotations
-
-        # Augment samples
-        #TODO: Implement functions for image augmentation
-
-        # Compile samples into batches
-        max_image_hw = tuple(max(image.shape[x] for image in image_group) for x in range(2))
-        image_batch = []
-        annotations_batch = []
-
-        for image, annotations in zip(image_group, annotations_group):
-            # Perform normalization on image and convert to tensor
-            image = transforms.pad_img_to(image, max_image_hw)
-            image = self.to_tensor(image)
-            image = self.normalize(image)
-
-            # Convert annotations to tensors
-            annotations = torch.Tensor(annotations)
-
-            image_batch.append(image)
-            annotations_batch.append(annotations)
-
-        # Stack image batches only as annotations batch can be differently sized
-        image_batch = torch.stack(image_batch, dim=0)
-
-        # Seems like a very long winded way to figure out if a model is training on GPU or not
-        if self.convert_cuda:
-            # Convert to cuda if needed
-            image_batch = image_batch.cuda()
-            annotations_batch = [anns.cuda() for anns in annotations_batch]
-
-        return {
-            'image'       : image_batch,
-            'annotations' : annotations_batch
-        }
-
-
-def build_collate_container(self):
-    return CollateContainer(
-        configs=deepcopy(self.configs),
-        convert_cuda=self.feature_pyramid_submodel.conv_P3.bias.is_cuda
-    )
