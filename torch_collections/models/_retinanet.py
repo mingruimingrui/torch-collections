@@ -331,8 +331,17 @@ class RetinaNetLoss(torch.nn.Module):
         if classification_loss is None:
             return None
 
-        # Regression loss defaults to 0 in the event that there is no positive anchors
         if regression_loss is None:
-            regression_loss = 0.0
+            # TODO: Identify which is the better way to train model
+
+            # Regression loss defaults to 0 in the event that there are no positive anchors
+            # Basically ensures that backprob happens only for negative classification
+            # regression_loss = 0.0
+
+            # Return None if no positive anchors
+            # Regression loss tends to be inflated when there are no positive anchors
+            # Due to large number of negative anchors already, negative mining seems
+            # rather overkill
+            return None
 
         return classification_loss + regression_loss
