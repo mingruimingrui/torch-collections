@@ -9,31 +9,41 @@ A pretrained model trained on the coco dataset can be downloaded from this repos
 
 This page serves as a documentation for the various functionalities of this implementation of `RetinaNet`.
 
+
+`RetinaNet.forward(image, annotations=None)` [source](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py#L116)
+
+**Args**
+
+> `image :tensor:` : The input image tensor formatted to NCHW and normalized to pytorch standard
+
+> `annotations :list of tensor:` : Needed only for training mode.
+A list of annotations, there should be N annotations (batch_size) in this list.
+Each annotation is a tensor in the shape (num_detections, 5),
+where each detection should be in the format (x1, y2, x2, y2, class_id).
+As annotations cannot be expected to have similar shapes, they have to be stored in a list
+
+**Returns**
+The returning item will be different for training and evaluation
+
+*training*
+> `loss :tensor:` :  The mean loss of this batch.
+
+*evaluation*
+> `detections :list:`: A list of length N (batch_size).
+Each entry is a dictionary in following format
+```
+{
+  'boxes'  : A tensor of the shape (num_detections, 4) where each box is in the (x1, y1, x2, y2) format
+  'labels' : A tensor of the shape (num_detections,) representing the individual class_id of each detection
+  'scores' : A tensor of the shape (num_detections,) representing the confidence score of each detection
+}
+```
+
+
 `RetinaNet.__init__(num_classes, **kwargs)` [source](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py#L29)
-> The model expects at least the num_classes argument. All other customization to the `RetinaNet` model can be viewed below
 
-`RetinaNet.forward(batch)` [source](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py#L116)
-> The `RetinaNet` model expects a dict-like object `batch` as an input.
-> Do take note that the inputs and outputs expected during training and evaluation are different
+> `num_classes :int:` : The number of classes the RetinaNet model is expected to detect
 
-> **Training** a training batch must be a sample in the following format
-```
-batch = {
-  'image' : The input image tensor formatted to NCHW and normalized to pytorch standard,
-  'annotations' : A list of annotations, there should be N annotations (batch size) in this list
-                  Each annotation is a tensor in the shape (Number of detections, 5)
-                  Where each detection should be in the following format (x1, y1, x2, y2, class_id)
-                  As annotations cannot be expected to have similar shapes, they have to be stored in a list
-}
-```
+> `kwargs :varied:` : A detailed list of customizable parameters are listed below
 
-> **Evaluation** an evaluation batch must be a sample in the following format
-```
-batch = {
-  'image' : The input image tensor formatted to NCHW and normalized to pytorch standard
-}
-```
-
-
-
-## customizable options
+All other customization to the `RetinaNet` model are listed below forward
