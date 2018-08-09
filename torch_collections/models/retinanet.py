@@ -113,9 +113,12 @@ class RetinaNet(torch.nn.Module):
         # Create funciton to apply NMS
         self.filter_detections = FilterDetections()
 
-    def forward(self, batch):
+    def forward(self, image, annotations=None):
+        if self.training:
+            assert annotations is not None
+
         # Calculate features
-        C3, C4, C5 =  self.backbone_model(batch['image'])
+        C3, C4, C5 =  self.backbone_model(image)
         features = self.feature_pyramid_submodel(C3, C4, C5)
 
         # Apply regression and classificatio submodels on each feature
@@ -128,21 +131,17 @@ class RetinaNet(torch.nn.Module):
 
         # Train on regression and classification
         if self.training:
-            outputs = {
-                'regression'     : regression,
-                'classification' : classification
-            }
-            return self.loss_fn(outputs, batch)
+            return self.loss_fn(regression, classification, image, annotations)
 
         # Collect batch information
-        feature_shapes = self.fpn_feature_shape_fn(batch['image'].shape)
+        feature_shapes = self.fpn_feature_shape_fn(image.shape)
 
         # Compute base anchors
-        anchors = self.compute_anchors(batch['image'].shape[0], feature_shapes)
+        anchors = self.compute_anchors(image.shape[0], feature_shapes)
 
         # Apply predicted regression to anchors
         boxes = self.regress_boxes(anchors, regression)
-        boxes = self.clip_boxes(batch['image'].shape, boxes)
+        boxes = self.clip_boxes(image.shape, boxes)
 
         detections = self.filter_detections(boxes, classification)
 
