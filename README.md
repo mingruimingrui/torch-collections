@@ -17,7 +17,7 @@ These are mainly measures taken to prevent the edition of model parameters post 
 
 ## List of models
 ### Detection
-- [RetinaNet](https://github.com/mingruimingrui/torch-collections/blob/master/docs/reinanet.md)
+- [RetinaNet](https://github.com/mingruimingrui/torch-collections/blob/master/docs/retinanet.md)
 
 ## License
 [MIT License](https://github.com/mingruimingrui/torch-collections/blob/master/LICENSE)
