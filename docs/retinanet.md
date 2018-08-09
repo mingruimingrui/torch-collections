@@ -14,22 +14,25 @@ This page serves as a documentation for the various functionalities of this impl
 
 **Args**
 
-> `image :tensor:` : The input image tensor formatted to NCHW and normalized to pytorch standard
+`annotations` will not be needed for evaluation.
 
-> `annotations :list of tensor:` : Needed only for training mode.
+> `image :tensor:` The input image tensor formatted to NCHW and normalized to pytorch standard
+
+> `annotations :list of tensor: (training only)`
 A list of annotations, there should be N annotations (batch_size) in this list.
 Each annotation is a tensor in the shape (num_detections, 5),
 where each detection should be in the format (x1, y2, x2, y2, class_id).
 As annotations cannot be expected to have similar shapes, they have to be stored in a list
 
 **Returns**
+
 The returning item will be different for training and evaluation
 
 *training*
-> `loss :tensor:` :  The mean loss of this batch.
+> `loss :tensor:` The mean loss of this batch.
 
 *evaluation*
-> `detections :list:`: A list of length N (batch_size).
+> `detections :list:` A list of length N (batch_size).
 Each entry is a dictionary in following format
 ```
 {
@@ -42,8 +45,6 @@ Each entry is a dictionary in following format
 
 `RetinaNet.__init__(num_classes, **kwargs)` [source](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py#L29)
 
-> `num_classes :int:` : The number of classes the RetinaNet model is expected to detect
+All valid kwargs are listed below.
 
-> `kwargs :varied:` : A detailed list of customizable parameters are listed below
-
-All other customization to the `RetinaNet` model are listed below forward
+> `num_classes :int:` The number of classes the RetinaNet model is expected to detect
