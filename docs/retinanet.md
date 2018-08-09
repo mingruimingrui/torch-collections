@@ -9,7 +9,7 @@ A pretrained model trained on the coco dataset can be downloaded from this repos
 
 This page serves as a documentation for the various functionalities of this implementation of `RetinaNet`.
 
----
+<br>
 
 ### `RetinaNet.forward(image, annotations=None)` [![source](https://img.shields.io/badge/source-blue.svg)](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py#L116)
 
@@ -46,7 +46,7 @@ Each entry is a dictionary in following format
 }
 ```
 
----
+<br>
 
 ### `RetinaNet.__init__(num_classes, **kwargs)` [![source](https://img.shields.io/badge/source-blue.svg)](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py#L29)
 
@@ -100,6 +100,7 @@ The internal channel size of the classification submodel (only for 'fc')
 > `classification_growth_rate :int: default 64`
 The channel growth rate of the classification submodel (only for 'dense')
 
+<br>
 
 ## Notes
 At the moment only `RetinaNet` at feature levels 3-7 has been implemented.
