@@ -16,7 +16,8 @@ This page serves as a documentation for the various functionalities of this impl
 
 `annotations` will not be needed for evaluation.
 
-> `image :tensor:` The input image tensor formatted to NCHW and normalized to pytorch standard
+> `image :tensor:`
+The input image tensor formatted to NCHW and normalized to pytorch standard
 
 > `annotations :list of tensor: (training only)`
 A list of annotations, there should be N annotations (batch_size) in this list.
@@ -29,10 +30,12 @@ As annotations cannot be expected to have similar shapes, they have to be stored
 The returning item will be different for training and evaluation
 
 *training*
-> `loss :tensor:` The mean loss of this batch.
+> `loss :tensor:`
+The mean loss of this batch.
 
 *evaluation*
-> `detections :list:` A list of length N (batch_size).
+> `detections :list:`
+A list of length N (batch_size).
 Each entry is a dictionary in following format
 ```
 {
@@ -47,4 +50,54 @@ Each entry is a dictionary in following format
 
 All valid kwargs are listed below.
 
-> `num_classes :int:` The number of classes the RetinaNet model is expected to detect
+> `num_classes :int:`
+The number of classes the RetinaNet model is expected to detect
+
+> `backbone :string: default 'resnet50'`
+The backbone to use in the RetinaNet option of `['resnet18', 'resnet34', 'resnet50', ...]`,
+only resnet backbones have been implemented so far.
+
+> `anchor_sizes :list: default [32, 64, 128, 256, 512]`
+The sizes at which anchors should be generated at each feature level starting at level 3, and ending at level 7.
+`anchor_sizes` should be a list of 5 integers.
+
+> `anchor_strides :list: default [8, 16, 32, 64, 128]`
+The strides at which anchors should be generated at each feature level starting at level 3, and ending at level 7.
+`anchor_strides` should be a list of 5 integers.
+
+> `anchor_ratios :list: default [0.5, 1, 2]`
+The ratios at which anchors should be generated at each moving window.
+
+> `anchor_scales :list: default [2 ** 0, 2 ** (1/3), 2 ** (2/3)]`
+The scales at which anchors should be generated at each moving window.
+
+> `pyramid_feature_size :int: default 256`
+The channel size of features output by the FPN.
+
+> `regression_block_type :string: default 'fc'`
+The type of regression submodel to use, option of `['fc', 'dense']`
+
+> `regression_num_layers :int: default 4`
+The number of layers in the regression submodel
+
+> `regression_feature_size :int: default 256`
+The internal channel size of the regression submodel (only for 'fc')
+
+> `regression_growth_rate :int: default 64`
+The channel growth rate of the regression submodel (only for 'dense')
+
+> `classification_block_type :string: default 'fc'`
+The type of classification submodel to use, option of `['fc', 'dense']`
+
+> `classification_num_layers :int: default 4`
+The number of layers in the classification submodel
+
+> `classification_feature_size :int: default 256`
+The internal channel size of the classification submodel (only for 'fc')
+
+> `classification_growth_rate :int: default 64`
+The channel growth rate of the classification submodel (only for 'dense')
+
+
+## Notes
+At the moment only `RetinaNet` at feature levels 3-7 has been implemented.
