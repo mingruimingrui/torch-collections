@@ -16,6 +16,7 @@ These config files contain the customizable parameters for the model which can b
 These are mainly measures taken to prevent the edition of model parameters post initialization and during training as such actions are highly inadvisable.
 
 ## List of models
+### Detection
 - [RetinaNet](https://github.com/mingruimingrui/torch-collections/blob/master/docs/reinanet.md)
 
 ## License
