@@ -1,7 +1,7 @@
 
 [source](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py)
 
-## torch_collections.models.RetinaNet
+## `torch_collections.models.RetinaNet`
 
 The `RetinaNet` is a state of the art object detection model, implemented based on [Focal Loss for Dense Object Detection](https://arxiv.org/abs/1708.02002).
 
@@ -10,7 +10,7 @@ A pretrained model trained on the coco dataset can be downloaded from this repos
 This page serves as a documentation for the various functionalities of this implementation of `RetinaNet`.
 
 
-`RetinaNet.forward(image, annotations=None)` [source](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py#L116)
+### `RetinaNet.forward(image, annotations=None)` [source](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py#L116)
 
 **Args**
 
@@ -46,7 +46,7 @@ Each entry is a dictionary in following format
 ```
 
 
-`RetinaNet.__init__(num_classes, **kwargs)` [source](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py#L29)
+### `RetinaNet.__init__(num_classes, **kwargs)` [source](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py#L29)
 
 All valid kwargs are listed below.
 
