@@ -1,3 +1,4 @@
+from __future__ import division
 import torch
 
 
@@ -28,7 +29,7 @@ class DetectionFocalLoss(torch.nn.Module):
 
         # Filter out ignore anchors
         indices    = anchor_states != -1
-        cls_inputs  = cls_inputs[indices]
+        cls_inputs  = cls_inputs[indices].clamp(min=1e-5)
         cls_targets = cls_targets[indices]
 
         if torch.sum(indices) == 0:
