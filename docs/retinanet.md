@@ -9,6 +9,7 @@ A pretrained model trained on the coco dataset can be downloaded from this repos
 
 This page serves as a documentation for the various functionalities of this implementation of `RetinaNet`.
 
+---
 
 ### `RetinaNet.forward(image, annotations=None)` [source](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py#L116)
 
@@ -31,7 +32,7 @@ The returning item will be different for training and evaluation
 
 *training*
 > `loss :tensor:`
-The mean loss of this batch.
+The mean loss of this batch, ready for backprop.
 
 *evaluation*
 > `detections :list:`
@@ -45,6 +46,7 @@ Each entry is a dictionary in following format
 }
 ```
 
+---
 
 ### `RetinaNet.__init__(num_classes, **kwargs)` [source](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py#L29)
 
