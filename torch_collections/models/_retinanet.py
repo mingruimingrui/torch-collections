@@ -10,7 +10,8 @@ from ..utils import anchors as utils_anchors
 
 
 def compute_targets(
-    batch,
+    batch_image,
+    batch_annotations,
     num_classes,
     fpn_feature_shape_fn,
     compute_anchors,
@@ -18,7 +19,7 @@ def compute_targets(
     regression_std
 ):
     # Compute anchors given image shape
-    image_shape = batch['image'].shape
+    image_shape = batch_image.shape
     feature_shapes = fpn_feature_shape_fn(image_shape)
     anchors = compute_anchors(1, feature_shapes)[0]
 
@@ -27,7 +28,7 @@ def compute_targets(
     labels_batch = []
     states_batch = []
 
-    for annotations in batch['annotations']:
+    for annotations in batch_annotations:
         labels, annotations, anchor_states = utils_anchors.anchor_targets_bbox(
             anchors,
             annotations,
@@ -49,11 +50,7 @@ def compute_targets(
     labels_batch     = torch.stack(labels_batch    , dim=0)
     states_batch     = torch.stack(states_batch    , dim=0)
 
-    return {
-        'regression'     : regression_batch,
-        'classification' : labels_batch,
-        'anchor_states'  : states_batch
-    }
+    return regression_batch, labels_batch, states_batch
 
 
 def _init_zero(t):
@@ -302,10 +299,10 @@ class RetinaNetLoss(torch.nn.Module):
         self.focal_loss_fn = DetectionFocalLoss(alpha=focal_alpha, gamma=focal_gamma)
         self.huber_loss_fn = DetectionSmoothL1Loss(sigma=huber_sigma)
 
-    def forward(self, outputs, batch):
+    def forward(self, output_regression, output_classification, batch_image, batch_annotations):
         # Compute targets
-        targets = compute_targets(
-            batch,
+        target_regression, target_classification, anchor_states = compute_targets(
+            batch_image, batch_annotations,
             num_classes=self.num_classes,
             fpn_feature_shape_fn=self.fpn_feature_shape_fn,
             compute_anchors=self.compute_anchors,
@@ -315,15 +312,15 @@ class RetinaNetLoss(torch.nn.Module):
 
         # Calculate losses
         classification_loss = self.focal_loss_fn(
-            outputs['classification'],
-            targets['classification'],
-            targets['anchor_states']
+            output_classification,
+            target_classification,
+            anchor_states
         )
 
         regression_loss = self.huber_loss_fn(
-            outputs['regression'],
-            targets['regression'],
-            targets['anchor_states']
+            output_regression,
+            target_regression,
+            anchor_states
         )
 
         # Return None if all anchors are too be ignored
@@ -331,8 +328,17 @@ class RetinaNetLoss(torch.nn.Module):
         if classification_loss is None:
             return None
 
-        # Regression loss defaults to 0 in the event that there is no positive anchors
         if regression_loss is None:
-            regression_loss = 0.0
+            # TODO: Identify which is the better way to train model
+
+            # Regression loss defaults to 0 in the event that there are no positive anchors
+            # Basically ensures that backprob happens only for negative classification
+            # regression_loss = 0.0
+
+            # Return None if no positive anchors
+            # Regression loss tends to be inflated when there are no positive anchors
+            # Due to large number of negative anchors already, negative mining seems
+            # rather overkill
+            return None
 
         return classification_loss + regression_loss
