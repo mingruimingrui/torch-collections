@@ -1,5 +1,5 @@
 
-[source](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py)
+[![api-source](https://img.shields.io/badge/api-source-blue.svg)](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py)
 
 ## `torch_collections.models.RetinaNet`
 
@@ -11,7 +11,7 @@ This page serves as a documentation for the various functionalities of this impl
 
 ---
 
-### `RetinaNet.forward(image, annotations=None)` [source](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py#L116)
+### `RetinaNet.forward(image, annotations=None)` [![source](https://img.shields.io/badge/source-blue.svg)](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py#L116)
 
 **Args**
 
@@ -48,7 +48,7 @@ Each entry is a dictionary in following format
 
 ---
 
-### `RetinaNet.__init__(num_classes, **kwargs)` [source](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py#L29)
+### `RetinaNet.__init__(num_classes, **kwargs)` [![source](https://img.shields.io/badge/source-blue.svg)](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py#L29)
 
 All valid kwargs are listed below.
 
