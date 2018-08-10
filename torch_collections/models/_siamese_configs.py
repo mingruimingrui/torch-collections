@@ -11,11 +11,17 @@ _c = AttrDict()
 
 #### Model configs
 _c.name           = 'encoder'
-_c.input_size     = [224, 224]
-_c.embedding_size = 256
+_c.input_size     = [160, 160]
+_c.embedding_size = 128
 
 _c.backbone        = 'resnet18'
 _c.freeze_backbone = False
+
+_c.l2_norm_alpha = 10  # based off https://arxiv.org/pdf/1703.09507.pdf
+
+#### Loss configs
+_c.dist_fn = 'euclidean'  # option of ['euclidean', 'cosine']
+_c.margin  = 0.2
 
 ################################################################################
 #### End of configurable parameters
