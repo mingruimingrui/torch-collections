@@ -5,13 +5,13 @@ specific variables and functions).
 """
 # TODO: Implement squeeze net
 
-def build_backbone_model(backbone_name):
+def build_backbone_model(backbone_name, freeze_backbone=False):
     if 'resnet' in backbone_name:
         from ._resnet import ResNetBackbone as Backbone
     else:
         raise Exception('{} has not been implemented yet'.format(backbone_name))
 
-    return Backbone(backbone_name)
+    return Backbone(backbone_name, freeze_backbone=freeze_backbone)
 
 def get_backbone_channel_sizes(backbone_name):
     if 'resnet' in backbone_name:

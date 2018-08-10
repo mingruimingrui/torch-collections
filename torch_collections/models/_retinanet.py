@@ -20,7 +20,7 @@ def compute_targets(
 ):
     # Compute anchors given image shape
     image_shape = batch_image.shape
-    feature_shapes = fpn_feature_shape_fn(image_shape)
+    feature_shapes = fpn_feature_shape_fn(image_shape)[-5:]
     anchors = compute_anchors(1, feature_shapes)[0]
 
     # Create blobs to store anchor informations
@@ -122,7 +122,7 @@ def _make_dynamic_block(
 class FeaturePyramidSubmodel(torch.nn.Module):
     def __init__(self, backbone_channel_sizes, feature_size=256):
         super(FeaturePyramidSubmodel, self).__init__()
-        C3_size, C4_size, C5_size = backbone_channel_sizes
+        C3_size, C4_size, C5_size = backbone_channel_sizes[-3:]
 
         self.relu           = torch.nn.ReLU(inplace=False)
 
