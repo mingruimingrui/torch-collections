@@ -25,14 +25,14 @@ def resnet_fpn_feature_shape_fn(img_shape):
     P6_shape = (math.ceil(P5_shape[0] / 2), math.ceil(P5_shape[1] / 2))
     P7_shape = (math.ceil(P6_shape[0] / 2), math.ceil(P6_shape[1] / 2))
 
-    return P3_shape, P4_shape, P5_shape, P6_shape, P7_shape
+    return C2_shape, P3_shape, P4_shape, P5_shape, P6_shape, P7_shape
 
 
 def get_resnet_backbone_channel_sizes(backbone_name):
     if backbone_name in ['resnet18', 'resnet34']:
-        sizes = [128, 256, 512]
+        sizes = [64, 128, 256, 512]
     elif backbone_name in ['resnet50', 'resnet101', 'resnet152']:
-        sizes = [512, 1024, 2048]
+        sizes = [256, 512, 1024, 2048]
     else:
         raise Exception('{} is not a valid resnet backbone'.format(backbone_name))
 
@@ -40,7 +40,7 @@ def get_resnet_backbone_channel_sizes(backbone_name):
 
 
 class ResNetBackbone(torch.nn.Module):
-    def __init__(self, backbone_name):
+    def __init__(self, backbone_name, freeze_backbone=False):
         super(ResNetBackbone, self).__init__()
 
         # Load a pretrained resnet model
@@ -67,6 +67,11 @@ class ResNetBackbone(torch.nn.Module):
                 for param in layer.parameters():
                     param.requires_grad = False
 
+        # Freeze backbone if flagged
+        if freeze_backbone:
+            for param in self.parameters():
+                param.requires_grad = False
+
     def forward(self, x):
         # Get layers which outputs C3, C4, C5
         C1 = self.conv1(x)
@@ -82,4 +87,4 @@ class ResNetBackbone(torch.nn.Module):
 
         C5 = self.layer4(C4)
 
-        return C3, C4, C5
+        return C2, C3, C4, C5

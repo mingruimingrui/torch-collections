@@ -24,8 +24,6 @@ class DetectionSmoothL1Loss(torch.nn.Module):
         self.sigma_squared = sigma ** 2
 
     def forward(self, rgs_inputs, rgs_targets, anchor_states):
-        torch.nn.modules.loss._assert_no_grad(rgs_targets)
-
         # filter out "ignore" anchors
         indices     = anchor_states == 1
         rgs_inputs  = rgs_inputs[indices]
