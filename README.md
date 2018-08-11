@@ -16,8 +16,12 @@ These config files contain the customizable parameters for the model which can b
 These are mainly measures taken to prevent the edition of model parameters post initialization and during training as such actions are highly inadvisable.
 
 ## List of models
-### Detection
+
+### Object detection
 - [RetinaNet](https://github.com/mingruimingrui/torch-collections/blob/master/docs/retinanet.md)
+
+### Feature embedding
+- [Siamese Network](https://github.com/mingruimingrui/torch-collections/blob/master/docs/siamese.md)
 
 ## License
 [MIT License](https://github.com/mingruimingrui/torch-collections/blob/master/LICENSE)
