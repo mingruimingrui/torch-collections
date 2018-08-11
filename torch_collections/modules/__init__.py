@@ -1,3 +1,5 @@
+from ._l2_normalization import L2Normalization
+
 from ._conv_block import ConvBlock2d
 from ._dense_block import DenseBlock2d
 
