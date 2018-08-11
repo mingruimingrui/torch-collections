@@ -25,8 +25,6 @@ class DetectionFocalLoss(torch.nn.Module):
         self.gamma = gamma
 
     def forward(self, cls_inputs, cls_targets, anchor_states):
-        torch.nn.modules.loss._assert_no_grad(cls_targets)
-
         # Filter out ignore anchors
         indices    = anchor_states != -1
         cls_inputs  = cls_inputs[indices].clamp(min=1e-5)
