@@ -20,7 +20,7 @@ def compute_targets(
 ):
     # Compute anchors given image shape
     image_shape = batch_image.shape
-    feature_shapes = fpn_feature_shape_fn(image_shape)
+    feature_shapes = fpn_feature_shape_fn(image_shape)[-5:]
     anchors = compute_anchors(1, feature_shapes)[0]
 
     # Create blobs to store anchor informations
@@ -122,7 +122,7 @@ def _make_dynamic_block(
 class FeaturePyramidSubmodel(torch.nn.Module):
     def __init__(self, backbone_channel_sizes, feature_size=256):
         super(FeaturePyramidSubmodel, self).__init__()
-        C3_size, C4_size, C5_size = backbone_channel_sizes
+        C3_size, C4_size, C5_size = backbone_channel_sizes[-3:]
 
         self.relu           = torch.nn.ReLU(inplace=False)
 
@@ -141,13 +141,13 @@ class FeaturePyramidSubmodel(torch.nn.Module):
     def forward(self, C3, C4, C5):
         # upsample C5 to get P5 from the FPN paper
         P5           = self.conv_C5_reduce(C5)
-        P5_upsampled = torch.nn.functional.upsample(P5, size=C4.shape[-2:], mode='bilinear', align_corners=False)
+        P5_upsampled = torch.nn.functional.interpolate(P5, size=C4.shape[-2:], mode='bilinear', align_corners=False)
         P5           = self.conv_P5(P5)
 
         # add P5 elementwise to C4
         P4           = self.conv_C4_reduce(C4)
         P4           = P5_upsampled + P4
-        P4_upsampled = torch.nn.functional.upsample(P4, size=C3.shape[-2:], mode='bilinear', align_corners=False)
+        P4_upsampled = torch.nn.functional.interpolate(P4, size=C3.shape[-2:], mode='bilinear', align_corners=False)
         P4           = self.conv_P4(P4)
 
         # add P4 elementwise to C3

@@ -118,7 +118,7 @@ class RetinaNet(torch.nn.Module):
             assert annotations is not None
 
         # Calculate features
-        C3, C4, C5 =  self.backbone_model(image)
+        C3, C4, C5 =  self.backbone_model(image)[-3:]
         features = self.feature_pyramid_submodel(C3, C4, C5)
 
         # Apply regression and classificatio submodels on each feature
@@ -134,7 +134,7 @@ class RetinaNet(torch.nn.Module):
             return self.loss_fn(regression, classification, image, annotations)
 
         # Collect batch information
-        feature_shapes = self.fpn_feature_shape_fn(image.shape)
+        feature_shapes = self.fpn_feature_shape_fn(image.shape)[-5:]
 
         # Compute base anchors
         anchors = self.compute_anchors(image.shape[0], feature_shapes)
