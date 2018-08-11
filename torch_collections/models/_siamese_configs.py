@@ -20,7 +20,7 @@ _c.freeze_backbone = False
 _c.l2_norm_alpha = 10  # based off https://arxiv.org/pdf/1703.09507.pdf
 
 #### Loss configs
-_c.margin    = 0.2
+_c.margin    = 0.5
 _c.dist_type = 'euclidean'  # option of ['euclidean', 'cosine']
 _c.p_norm    = 2.0  # normalization degree in euclidean distance
 
