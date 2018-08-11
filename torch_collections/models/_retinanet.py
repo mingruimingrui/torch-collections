@@ -141,13 +141,19 @@ class FeaturePyramidSubmodel(torch.nn.Module):
     def forward(self, C3, C4, C5):
         # upsample C5 to get P5 from the FPN paper
         P5           = self.conv_C5_reduce(C5)
-        P5_upsampled = torch.nn.functional.interpolate(P5, size=C4.shape[-2:], mode='bilinear', align_corners=False)
+        if torch.__version__ == '0.4.1':
+            P5_upsampled = torch.nn.functional.interpolate(P5, size=C4.shape[-2:], mode='bilinear', align_corners=False)
+        else:
+            P5_upsampled = torch.nn.functional.upsample(P5, size=C4.shape[-2:], mode='bilinear', align_corners=False)
         P5           = self.conv_P5(P5)
 
         # add P5 elementwise to C4
         P4           = self.conv_C4_reduce(C4)
         P4           = P5_upsampled + P4
-        P4_upsampled = torch.nn.functional.interpolate(P4, size=C3.shape[-2:], mode='bilinear', align_corners=False)
+        if torch.__version__ == '0.4.1':
+            P4_upsampled = torch.nn.functional.interpolate(P4, size=C3.shape[-2:], mode='bilinear', align_corners=False)
+        else:
+            P4_upsampled = torch.nn.functional.upsample(P4, size=C3.shape[-2:], mode='bilinear', align_corners=False)
         P4           = self.conv_P4(P4)
 
         # add P4 elementwise to C3
