@@ -47,7 +47,10 @@ class Siamese(torch.nn.Module):
 
     def build_modules(self):
         # Build backbone model
-        self.backbone_model = build_backbone_model(self.configs['backbone'])
+        self.backbone_model = build_backbone_model(
+            self.configs['backbone'],
+            freeze_backbone=self.configs['freeze_backbone']
+        )
 
         # Retrieve deepest backbone_model output shape
         dummy_input = torch.Tensor(1, 3, self.configs['input_size'][0], self.configs['input_size'][1])
@@ -65,12 +68,24 @@ class Siamese(torch.nn.Module):
         self.l2_norm = L2Normalization(alpha=self.configs['l2_norm_alpha'])
 
         # Distance functions
-        self.pdist_fn = DynamicPairDistance(dist_type=self.configs['dist_type'], p=self.configs['p_norm'])
-        self.dist_fn = DynamicDistanceFunction(dist_type=self.configs['dist_type'], p=self.configs['p_norm'])
+        self.pdist_fn = DynamicPairDistance(
+            dist_type=self.configs['dist_type'],
+            p=self.configs['p_norm']
+        )
+        self.dist_fn = DynamicDistanceFunction(
+            dist_type=self.configs['dist_type'],
+            p=self.configs['p_norm']
+        )
 
         # loss functions
-        self.triplet_loss = DynamicTripletLoss(margin=self.configs['margin'], dist_fn=self.dist_fn)
-        self.contrastive_loss = DynamicContrastiveLoss(margin=self.configs['margin'], dist_fn=self.dist_fn)
+        self.triplet_loss = DynamicTripletLoss(
+            margin=self.configs['margin'],
+            dist_fn=self.dist_fn
+        )
+        self.contrastive_loss = DynamicContrastiveLoss(
+            margin=self.configs['margin'],
+            dist_fn=self.dist_fn
+        )
 
     def forward(self, x):
         x =  self.backbone_model(x)[-1]
