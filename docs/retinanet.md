@@ -21,12 +21,14 @@ The `RetinaNet` is a `torch.nn.Module` object and share all of it's functions.
 
 - [`RetinaNet.__init__`](#retinanet__init__num_classes-kwargs)
 - [`RetinaNet.forward`](#retinanetforwardimage-annotationsnone-)
-- [`RetinaNet.configs`](#)
+- [`RetinaNet.configs`](#retinanetconfigs)
 
 <br>
 
 
 ### `RetinaNet.__init__(num_classes, **kwargs)`
+
+The initialization of the `RetinaNet` will store all parameters in `RetinaNet.configs` as a dictionary. Reference to it for the model settings.
 
 | Arguments | Descriptions |
 | --- | --- |
@@ -51,6 +53,9 @@ The `RetinaNet` is a `torch.nn.Module` object and share all of it's functions.
 
 ### `RetinaNet.forward(image, annotations=None)`
 
+The inference function expects both `image` and `annotations` during training. However only `image` is required for evaluation.
+Do note that the outputs for training and evaluation mode are also different.
+
 | Arguments | Descriptions |
 | --- | --- |
 | `image` | `type: tensor` <br> The input image tensor formatted to NCHW and normalized to pytorch standard |
@@ -60,7 +65,6 @@ The `RetinaNet` is a `torch.nn.Module` object and share all of it's functions.
 | --- | --- |
 | `loss` <br> *training only* | `type: tensor` <br> The mean loss of this batch. Backprop ready. |
 | `detections` <br> *evaluation only* | `type: list` <br> A list of length N (batch_size). Each entry is a dictionary in the format shown below. |
-
 ```
 {
   'boxes'  : A tensor of the shape (num_detections, 4) where each box is in the (x1, y1, x2, y2) format
@@ -68,3 +72,10 @@ The `RetinaNet` is a `torch.nn.Module` object and share all of it's functions.
   'scores' : A tensor of the shape (num_detections,) representing the confidence score of each detection
 }
 ```
+
+<br>
+
+
+### `RetinaNet.configs`
+
+An `AttrDict` containing all the parameters called upon initialization. The `AttrDict` is immutable which is done to ensure that model parameters are not changed accidentally during training.
