@@ -1,4 +1,6 @@
-<!-- Insert examples in the future -->
+<p align="center">
+  <img src="https://github.com/mingruimingrui/torch-collections/blob/feature/improve_docs/images/retinanet_example_1.jpg" height="400px"/>
+</p>
 
 [![api-source](https://img.shields.io/badge/api-source-blue.svg)](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py)
 
