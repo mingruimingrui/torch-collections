@@ -111,7 +111,11 @@ class RetinaNet(torch.nn.Module):
         self.clip_boxes    = ClipBoxes()
 
         # Create funciton to apply NMS
-        self.filter_detections = FilterDetections()
+        self.filter_detections = FilterDetections(
+            nms_threshold=self.configs['nms_threshold'],
+            score_threshold=self.configs['score_threshold'],
+            max_detections=self.configs['max_detections']
+        )
 
     def forward(self, image, annotations=None):
         if self.training:
