@@ -14,6 +14,7 @@ On a side note, this implementation of `RetinaNet` only supports feature levels 
 
 <br>
 
+
 ## API reference
 
 The `RetinaNet` is a `torch.nn.Module` object and share all of it's functions.
@@ -24,63 +25,42 @@ The `RetinaNet` is a `torch.nn.Module` object and share all of it's functions.
 
 <br>
 
+
 ### `RetinaNet.__init__(num_classes, **kwargs)`
 
 | Arguments | Descriptions |
 | --- | --- |
-| `num_classes (required)` | `int` <br> The number of classes this model is expected to detect. |
-| `backbone` | `string` `default: 'resnet50'` `option: ['resnet18', 'resnet34', ...]` <br> The backbone to be used in the RetinaNet model. Only resnet backbones has been implemented so far. |
-| `anchor_sizes` | `list` `default: [32, 64, 128, 256, 512]` <br> The sizes at which anchors should be generated at each feature level. |
-| `anchor_strides` | `list` `default: [8, 16, 32, 64, 128]` <br> The strides at which anchors should be generated at each feature level. |
-| `anchor_ratios` | `list` `default: [0.5, 1, 2]` <br> The ratios at which anchors should be generated at each moving window. |
-| `anchor_scales` | `list` `default: [2 ** 0, 2 ** (1/3), 2 ** (2/3)]` <br> The scales at which anchors should be generated at each moving window. |
-| `pyramid_feature_size` | `int` `default: 256` <br> The channel size of features output by the FPN. |
-| `regression_block_type` | `string` `default: 'fc'` `option: ['fc', 'dense']` <br> The type of regression model to use. |
-| `regression_num_layers` | `int` `default: 4` <br> The number of layers in the regression model. |
-| `regression_feature_size` | `int` `default: 256` <br> The internal channel size of the regression model (only for `'fc'`). |
-| `regression_growth_rate` | `int` `default: 64` <br> The channel growth rate of the regression model (only for `'dense'`). |
-| `classification_block_type` | `string` `default: 'fc'` `option: ['fc', 'dense']` <br> The type of classification model to use. |
-| `classification_num_layers` | `int` `default: 4` <br> The number of layers in the classification model. |
-| `classification_feature_size` | `int` `default: 256` <br> The internal channel size of the classification model (only for `'fc'`). |
-| `classification_growth_rate` | `int` `default: 64` <br> The channel growth rate of the classification model (only for `'dense'`). |
+| `num_classes (required)` | `type: int` <br> The number of classes this model is expected to detect. |
+| `backbone` | `type: string` `default: 'resnet50'` `option: ['resnet18', 'resnet34', ...]` <br> The backbone to be used in the RetinaNet model. Only resnet backbones has been implemented so far. |
+| `anchor_sizes` | `type: list` `default: [32, 64, 128, 256, 512]` <br> The sizes at which anchors should be generated at each feature level. |
+| `anchor_strides` | `type: list` `default: [8, 16, 32, 64, 128]` <br> The strides at which anchors should be generated at each feature level. |
+| `anchor_ratios` | `type: list` `default: [0.5, 1, 2]` <br> The ratios at which anchors should be generated at each moving window. |
+| `anchor_scales` | `type: list` `default: [2 ** 0, 2 ** (1/3), 2 ** (2/3)]` <br> The scales at which anchors should be generated at each moving window. |
+| `pyramid_feature_size` | `type: int` `default: 256` <br> The channel size of features output by the FPN. |
+| `regression_block_type` | `type: string` `default: 'fc'` `option: ['fc', 'dense']` <br> The type of regression model to use. |
+| `regression_num_layers` | `type: int` `default: 4` <br> The number of layers in the regression model. |
+| `regression_feature_size` | `type: int` `default: 256` <br> The internal channel size of the regression model (only for `'fc'`). |
+| `regression_growth_rate` | `type: int` `default: 64` <br> The channel growth rate of the regression model (only for `'dense'`). |
+| `classification_block_type` | `type: string` `default: 'fc'` `option: ['fc', 'dense']` <br> The type of classification model to use. |
+| `classification_num_layers` | `type: int` `default: 4` <br> The number of layers in the classification model. |
+| `classification_feature_size` | `type: int` `default: 256` <br> The internal channel size of the classification model (only for `'fc'`). |
+| `classification_growth_rate` | `type: int` `default: 64` <br> The channel growth rate of the classification model (only for `'dense'`). |
 
 <br>
 
 
+### `RetinaNet.forward(image, annotations=None)`
 
+| Arguments | Descriptions |
+| --- | --- |
+| `image` | `type: tensor` <br> The input image tensor formatted to NCHW and normalized to pytorch standard |
+| `annotations` <br> *training only* | `type: list` <br> A list of annotations, there should be N (batch_size) annotations in this list. <br> Each annotation is a tensor in the shape (num_detections, 5), where each detection should be in the format (x1, y2, x2, y2, class_id). <br> As annotations cannot be expected to have similar shapes, they have to be stored in a list. <br> This variable is only needed for training. |
 
+| Returns | Descriptions |
+| --- | --- |
+| `loss` <br> *training only* | `type: tensor` <br> The mean loss of this batch. Backprop ready. |
+| `detections` <br> *evaluation only* | `type: list` <br> A list of length N (batch_size). Each entry is a dictionary in the format shown below. |
 
-
-
-
-
-### `RetinaNet.forward(image, annotations=None)` [![source](https://img.shields.io/badge/source-blue.svg)](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py#L116)
-
-**Args**
-
-`annotations` will not be needed for evaluation.
-
-> `image :tensor:`
-The input image tensor formatted to NCHW and normalized to pytorch standard
-
-> `annotations :list of tensor: (training only)`
-A list of annotations, there should be N annotations (batch_size) in this list.
-Each annotation is a tensor in the shape (num_detections, 5),
-where each detection should be in the format (x1, y2, x2, y2, class_id).
-As annotations cannot be expected to have similar shapes, they have to be stored in a list
-
-**Returns**
-
-The returning item will be different for training and evaluation
-
-*training*
-> `loss :tensor:`
-The mean loss of this batch, ready for backprop.
-
-*evaluation*
-> `detections :list:`
-A list of length N (batch_size).
-Each entry is a dictionary in following format
 ```
 {
   'boxes'  : A tensor of the shape (num_detections, 4) where each box is in the (x1, y1, x2, y2) format
