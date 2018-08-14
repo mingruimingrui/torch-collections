@@ -22,7 +22,7 @@ On a side note, this implementation of `RetinaNet` only supports feature levels 
 The `RetinaNet` is a `torch.nn.Module` object and share all of it's functions.
 
 - [`RetinaNet.__init__`](#retinanet__init__num_classes-kwargs)
-- [`RetinaNet.forward`](#retinanetforwardimage-annotationsnone-)
+- [`RetinaNet.forward`](#retinanetforwardimage-annotationsnone)
 - [`RetinaNet.configs`](#retinanetconfigs)
 
 <br>

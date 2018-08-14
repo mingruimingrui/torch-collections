@@ -20,11 +20,11 @@ The `Siamese` network is a `torch.nn.Module` object and share all of it's functi
 
 - [`Siamese.__init__`](#siamese__init__kwargs-)
 - [`Siamese.forward`](#siameseforwardimage-)
-- [`Siamese.configs`](#siameseconfigs)
 - [`Siamese.dist_fn`](#siamesedist_fna-b)
 - [`Siamese.pdist_fn`](#siamesepdist_fna)
 - [`Siamese.triplet_loss`](#siamesetriplet_lossanchor-positive-negative)
 - [`Siamese.contrastive_loss`](#siamesecontrastive_lossa-b-target)
+- [`Siamese.configs`](#siameseconfigs)
 
 <br>
 
