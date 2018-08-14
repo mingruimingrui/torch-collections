@@ -219,12 +219,13 @@ def box_nms(bboxes, scores, threshold=0.5, mode='union'):
     x2 = bboxes[:,2]
     y2 = bboxes[:,3]
 
-    areas = (x2-x1+1) * (y2-y1+1)
+    areas = (x2-x1) * (y2-y1)
     _, order = scores.sort(0, descending=True)
 
     keep = []
     while order.numel() > 0:
         if not len(order.shape):
+            print('WTF')
             break
 
         i = order[0]
@@ -233,25 +234,8 @@ def box_nms(bboxes, scores, threshold=0.5, mode='union'):
         if order.numel() == 1:
             break
 
-        xx1 = torch.where(x1[order[1:]] > x1[i], x1[order[1:]], x1[i])
-        yy1 = torch.where(y1[order[1:]] > y1[i], y1[order[1:]], y1[i])
-        xx2 = torch.where(x2[order[1:]] > x2[i], x2[order[1:]], x2[i])
-        yy2 = torch.where(y2[order[1:]] > y2[i], y2[order[1:]], y2[i])
-
-        w = (xx2-xx1+1).clamp(min=0)
-        h = (yy2-yy1+1).clamp(min=0)
-        inter = w*h
-
-        if mode == 'union':
-            ovr = inter / (areas[i] + areas[order[1:]] - inter)
-        elif mode == 'min':
-            ovr = inter / areas[order[1:]]
-            ovr = torch.where(ovr > areas[i], ovr, areas[i])
-        else:
-            raise TypeError('Unknown nms mode: %s.' % mode)
-
+        ovr = compute_overlap(bboxes[order[0]:order[0]+1], bboxes[order[1:]])[0]
         ids = (ovr<=threshold).nonzero().squeeze()
-        if ids.numel() == 0:
-            break
-        order = order[ids+1]
+        order = order[ids + 1]
+
     return torch.LongTensor(keep)
