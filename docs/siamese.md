@@ -115,7 +115,7 @@ Computes the contrastive loss for a given set of embeddings and target.
 
 | Arguments | Descriptions |
 | --- | --- |
-| `A, b` | `type: tensor` <br> Embedding tensors of the 2 images. Each tensor is of the shape (batch_size, embedding_size). |
+| `A, B` | `type: tensor` <br> Embedding tensors of the 2 images. Each tensor is of the shape (batch_size, embedding_size). |
 | `target` | `type: tensor` <br> Indicator for each image pair. 1 for same class, 0 for different class. |
 
 | Returns | Descriptions |
