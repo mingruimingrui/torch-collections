@@ -225,7 +225,6 @@ def box_nms(bboxes, scores, threshold=0.5):
     keep = []
     while order.numel() > 0:
         if not len(order.shape):
-            print('WTF')
             break
 
         i = order[0]
