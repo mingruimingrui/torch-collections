@@ -18,13 +18,13 @@ On a side note, the `Siamese` network has not been tested yet. There is still tu
 
 The `Siamese` network is a `torch.nn.Module` object and share all of it's functions.
 
-- [`Siamese.__init__`](#siamese__init__kwargs)
-- [`Siamese.forward`](#siameseforwardimage)
+- [`Siamese.__init__`](#siamese__init__kwargs-)
+- [`Siamese.forward`](#siameseforwardimage-)
 - [`Siamese.configs`](#siameseconfigs)
-- [`Siamese.dist_fn`](#siamesedist_fn)
-- [`Siamese.pdist_fn`](#siamesepdist_fn)
-- [`Siamese.triplet_loss`](#siamesetriplet_loss)
-- [`Siamese.contrastive_loss`](#siamesecontrastive_loss)
+- [`Siamese.dist_fn`](#siamesedist_fna-b)
+- [`Siamese.pdist_fn`](#siamesepdist_fna)
+- [`Siamese.triplet_loss`](#siamesetriplet_lossanchor-positive-negative)
+- [`Siamese.contrastive_loss`](#siamesecontrastive_lossa-b-target)
 
 <br>
 
@@ -123,3 +123,8 @@ Computes the contrastive loss for a given set of embeddings and target.
 | `loss` | `type: tensor` <br> A single tensor indicating the loss for the pair wise batch. |
 
 <br>
+
+
+### `Siamese.configs`
+
+An `AttrDict` containing all the parameters called upon initialization. The `AttrDict` is immutable which is done to ensure that model parameters are not changed accidentally during training.
