@@ -201,7 +201,7 @@ def anchor_targets_bbox(
     return labels, annotations, anchor_states
 
 
-def box_nms(bboxes, scores, threshold=0.5, mode='union'):
+def box_nms(bboxes, scores, threshold=0.5):
     '''Non maximum suppression.
     Args
         bboxes: (tensor) bounding boxes, sized [N,4].
