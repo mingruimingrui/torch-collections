@@ -121,7 +121,7 @@ class RetinaNet(torch.nn.Module):
         C3, C4, C5 =  self.backbone_model(image)[-3:]
         features = self.feature_pyramid_submodel(C3, C4, C5)
 
-        # Apply regression and classificatio submodels on each feature
+        # Apply regression and classification submodels on each feature
         regression_outputs     = [self.regression_submodel(f)     for f in features]
         classification_outputs = [self.classification_submodel(f) for f in features]
 
