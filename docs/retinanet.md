@@ -1,7 +1,8 @@
+<!-- Insert examples in the future -->
 
 [![api-source](https://img.shields.io/badge/api-source-blue.svg)](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py)
 
-## `torch_collections.models.retinanet.RetinaNet`
+## `class torch_collections.models.retinanet.RetinaNet(torch.nn.Module)`
 
 The `RetinaNet` is a state of the art object detection model, implemented based on [Focal Loss for Dense Object Detection](https://arxiv.org/abs/1708.02002).
 
@@ -9,7 +10,49 @@ A pretrained model trained on the coco dataset can be downloaded from this repos
 
 This page serves as a documentation for the various functionalities of this implementation of `RetinaNet`.
 
+On a side note, this implementation of `RetinaNet` only supports feature levels of 3 - 7. There are no short term plans to add this feature.
+
 <br>
+
+## API reference
+
+The `RetinaNet` is a `torch.nn.Module` object and share all of it's functions.
+
+- [`RetinaNet.__init__`](#)
+- [`RetinaNet.forward`](#)
+- [`RetinaNet.configs`](#)
+
+<br>
+
+### `RetinaNet.__init__(num_classes, **kwargs)`
+
+| Arguments | Descriptions |
+| --- | --- |
+| `num_classes (required)` | `int` The number of classes this model is expected to detect. |
+| `backbone` | `string` The backbone to be used in the RetinaNet model. Only resnet backbones has been implemented so far. Default of `'resnet50'`. Option of `['resnet18', 'resnet34', ...]`. |
+| `anchor_sizes` | `list` The sizes at which anchors should be generated at each feature level. Default of `[32, 64, 128, 256, 512]`. |
+| `anchor_strides` | `list` The strides at which anchors should be generated at each feature level. Default of `[8, 16, 32, 64, 128]`. |
+| `anchor_ratios` | `list` The ratios at which anchors should be generated at each moving window. Default of `[0.5, 1, 2]`. |
+| `anchor_scales` | `list` The scales at which anchors should be generated at each moving window. Default of `[2 ** 0, 2 ** (1/3), 2 ** (2/3)]`. |
+| `pyramid_feature_size` | `int` The channel size of features output by the FPN. Default of `256`. |
+| `regression_block_type` | `string` The type of regression model to use. Default of `'fc'`. Option of `['fc', 'dense']`. |
+| `regression_num_layers` | `int` The number of layers in the regression model. Default of `4`. |
+| `regression_feature_size` | `int` The internal channel size of the regression model (only for `'fc'`). Default of `256`. |
+| `regression_growth_rate` | `int` The channel growth rate of the regression model (only for `'dense'`). Default of `64`. |
+| `classification_block_type` | `string` The type of classification model to use. Default of `'fc'`. Option of `['fc', 'dense']`. |
+| `classification_num_layers` | `int` The number of layers in the classification model. Default of `4`. |
+| `classification_feature_size` | `int` The internal channel size of the classification model (only for `'fc'`). Default of `256`. |
+| `classification_growth_rate` | `int` The channel growth rate of the classification model (only for `'dense'`). Default of `64`. |
+
+<br>
+
+
+
+
+
+
+
+
 
 ### `RetinaNet.forward(image, annotations=None)` [![source](https://img.shields.io/badge/source-blue.svg)](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py#L116)
 
@@ -45,62 +88,3 @@ Each entry is a dictionary in following format
   'scores' : A tensor of the shape (num_detections,) representing the confidence score of each detection
 }
 ```
-
-<br>
-
-### `RetinaNet.__init__(num_classes, **kwargs)` [![source](https://img.shields.io/badge/source-blue.svg)](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py#L29)
-
-All valid kwargs are listed below.
-
-> `num_classes :int:`
-The number of classes the RetinaNet model is expected to detect
-
-> `backbone :string: default 'resnet50'`
-The backbone to use in the RetinaNet option of `['resnet18', 'resnet34', 'resnet50', ...]`,
-only resnet backbones have been implemented so far.
-
-> `anchor_sizes :list: default [32, 64, 128, 256, 512]`
-The sizes at which anchors should be generated at each feature level starting at level 3, and ending at level 7.
-`anchor_sizes` should be a list of 5 integers.
-
-> `anchor_strides :list: default [8, 16, 32, 64, 128]`
-The strides at which anchors should be generated at each feature level starting at level 3, and ending at level 7.
-`anchor_strides` should be a list of 5 integers.
-
-> `anchor_ratios :list: default [0.5, 1, 2]`
-The ratios at which anchors should be generated at each moving window.
-
-> `anchor_scales :list: default [2 ** 0, 2 ** (1/3), 2 ** (2/3)]`
-The scales at which anchors should be generated at each moving window.
-
-> `pyramid_feature_size :int: default 256`
-The channel size of features output by the FPN.
-
-> `regression_block_type :string: default 'fc'`
-The type of regression submodel to use, option of `['fc', 'dense']`
-
-> `regression_num_layers :int: default 4`
-The number of layers in the regression submodel
-
-> `regression_feature_size :int: default 256`
-The internal channel size of the regression submodel (only for 'fc')
-
-> `regression_growth_rate :int: default 64`
-The channel growth rate of the regression submodel (only for 'dense')
-
-> `classification_block_type :string: default 'fc'`
-The type of classification submodel to use, option of `['fc', 'dense']`
-
-> `classification_num_layers :int: default 4`
-The number of layers in the classification submodel
-
-> `classification_feature_size :int: default 256`
-The internal channel size of the classification submodel (only for 'fc')
-
-> `classification_growth_rate :int: default 64`
-The channel growth rate of the classification submodel (only for 'dense')
-
-<br>
-
-## Notes
-At the moment only `RetinaNet` at feature levels 3-7 has been implemented.
