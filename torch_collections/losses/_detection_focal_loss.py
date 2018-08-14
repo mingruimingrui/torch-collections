@@ -27,7 +27,7 @@ class DetectionFocalLoss(torch.nn.Module):
     def forward(self, cls_inputs, cls_targets, anchor_states):
         # Filter out ignore anchors
         indices    = anchor_states != -1
-        cls_inputs  = cls_inputs[indices].clamp(min=1e-5)
+        cls_inputs  = cls_inputs[indices].clamp(min=0.00001, max=0.99999)
         cls_targets = cls_targets[indices]
 
         if torch.sum(indices) == 0:
