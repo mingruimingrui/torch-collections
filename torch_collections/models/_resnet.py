@@ -64,6 +64,7 @@ class ResNetBackbone(torch.nn.Module):
         # Freeze batch norm
         for layer in self.modules():
             if isinstance(layer, torch.nn.BatchNorm2d):
+                layer.track_running_stats = False
                 for param in layer.parameters():
                     param.requires_grad = False
 
