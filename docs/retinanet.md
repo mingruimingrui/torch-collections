@@ -2,7 +2,7 @@
 
 [![api-source](https://img.shields.io/badge/api-source-blue.svg)](https://github.com/mingruimingrui/torch-collections/blob/master/torch_collections/models/retinanet.py)
 
-## `class torch_collections.models.retinanet.RetinaNet(torch.nn.Module)`
+## `torch_collections.models.retinanet.RetinaNet`
 
 The `RetinaNet` is a state of the art object detection model, implemented based on [Focal Loss for Dense Object Detection](https://arxiv.org/abs/1708.02002).
 
@@ -18,8 +18,8 @@ On a side note, this implementation of `RetinaNet` only supports feature levels 
 
 The `RetinaNet` is a `torch.nn.Module` object and share all of it's functions.
 
-- [`RetinaNet.__init__`](#)
-- [`RetinaNet.forward`](#)
+- [`RetinaNet.__init__`](#retinanet__init__num_classes-kwargs)
+- [`RetinaNet.forward`](#retinanetforwardimage-annotationsnone-)
 - [`RetinaNet.configs`](#)
 
 <br>
@@ -28,21 +28,21 @@ The `RetinaNet` is a `torch.nn.Module` object and share all of it's functions.
 
 | Arguments | Descriptions |
 | --- | --- |
-| `num_classes (required)` | `int` The number of classes this model is expected to detect. |
-| `backbone` | `string` The backbone to be used in the RetinaNet model. Only resnet backbones has been implemented so far. Default of `'resnet50'`. Option of `['resnet18', 'resnet34', ...]`. |
-| `anchor_sizes` | `list` The sizes at which anchors should be generated at each feature level. Default of `[32, 64, 128, 256, 512]`. |
-| `anchor_strides` | `list` The strides at which anchors should be generated at each feature level. Default of `[8, 16, 32, 64, 128]`. |
-| `anchor_ratios` | `list` The ratios at which anchors should be generated at each moving window. Default of `[0.5, 1, 2]`. |
-| `anchor_scales` | `list` The scales at which anchors should be generated at each moving window. Default of `[2 ** 0, 2 ** (1/3), 2 ** (2/3)]`. |
-| `pyramid_feature_size` | `int` The channel size of features output by the FPN. Default of `256`. |
-| `regression_block_type` | `string` The type of regression model to use. Default of `'fc'`. Option of `['fc', 'dense']`. |
-| `regression_num_layers` | `int` The number of layers in the regression model. Default of `4`. |
-| `regression_feature_size` | `int` The internal channel size of the regression model (only for `'fc'`). Default of `256`. |
-| `regression_growth_rate` | `int` The channel growth rate of the regression model (only for `'dense'`). Default of `64`. |
-| `classification_block_type` | `string` The type of classification model to use. Default of `'fc'`. Option of `['fc', 'dense']`. |
-| `classification_num_layers` | `int` The number of layers in the classification model. Default of `4`. |
-| `classification_feature_size` | `int` The internal channel size of the classification model (only for `'fc'`). Default of `256`. |
-| `classification_growth_rate` | `int` The channel growth rate of the classification model (only for `'dense'`). Default of `64`. |
+| `num_classes (required)` | `int` <br> The number of classes this model is expected to detect. |
+| `backbone` | `string` `default: 'resnet50'` `option: ['resnet18', 'resnet34', ...]` <br> The backbone to be used in the RetinaNet model. Only resnet backbones has been implemented so far. |
+| `anchor_sizes` | `list` `default: [32, 64, 128, 256, 512]` <br> The sizes at which anchors should be generated at each feature level. |
+| `anchor_strides` | `list` `default: [8, 16, 32, 64, 128]` <br> The strides at which anchors should be generated at each feature level. |
+| `anchor_ratios` | `list` `default: [0.5, 1, 2]` <br> The ratios at which anchors should be generated at each moving window. |
+| `anchor_scales` | `list` `default: [2 ** 0, 2 ** (1/3), 2 ** (2/3)]` <br> The scales at which anchors should be generated at each moving window. |
+| `pyramid_feature_size` | `int` `default: 256` <br> The channel size of features output by the FPN. |
+| `regression_block_type` | `string` `default: 'fc'` `option: ['fc', 'dense']` <br> The type of regression model to use. |
+| `regression_num_layers` | `int` `default: 4` <br> The number of layers in the regression model. |
+| `regression_feature_size` | `int` `default: 256` <br> The internal channel size of the regression model (only for `'fc'`). |
+| `regression_growth_rate` | `int` `default: 64` <br> The channel growth rate of the regression model (only for `'dense'`). |
+| `classification_block_type` | `string` `default: 'fc'` `option: ['fc', 'dense']` <br> The type of classification model to use. |
+| `classification_num_layers` | `int` `default: 4` <br> The number of layers in the classification model. |
+| `classification_feature_size` | `int` `default: 256` <br> The internal channel size of the classification model (only for `'fc'`). |
+| `classification_growth_rate` | `int` `default: 64` <br> The channel growth rate of the classification model (only for `'dense'`). |
 
 <br>
 
