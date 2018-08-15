@@ -1,8 +1,10 @@
+""" Referenced from https://github.com/adambielski/siamese-triplet/blob/master/utils.py """
+
 import numpy as np
 import torch
 
 
-def random_hard_negative(loss_values):
+def random_hard_negative(loss_values, margin):
     hard_negatives = np.where(loss_values > 0)[0]
     return np.random.choice(hard_negatives) if len(hard_negatives) > 0 else None
 
@@ -12,14 +14,13 @@ def semihard_negative(loss_values, margin):
     return np.random.choice(semihard_negatives) if len(semihard_negatives) > 0 else None
 
 
-def hardest_negative(loss_values):
+def hardest_negative(loss_values, margin):
     hard_negative = np.argmax(loss_values)
     return hard_negative if loss_values[hard_negative] > 0 else None
 
 
 class TripletSelector(torch.nn.Module):
-    """ Referenced from https://github.com/adambielski/siamese-triplet/blob/master/utils.py """
-    def __init__(self, negative_mining_type, pdist, cpu=True):
+    def __init__(self, negative_mining_type, margin, pdist, cpu=True):
         super(TripletSelector, self).__init__()
         self.pdist = pdist
         self.cpu = cpu
@@ -52,7 +53,7 @@ class TripletSelector(torch.nn.Module):
             for anchor_positive, ap_distance in zip(anchor_positives, ap_distances):
                 loss_values = ap_distance - distance_matrix[torch.LongTensor(np.array([anchor_positive[0]])), torch.LongTensor(negative_indices)] + self.margin
                 loss_values = loss_values.data.cpu().numpy()
-                hard_negative = self.negative_selection_fn(loss_values)
+                hard_negative = self.negative_selection_fn(loss_values, self.margin)
                 if hard_negative is not None:
                     hard_negative = negative_indices[hard_negative]
                     triplets.append([anchor_positive[0], anchor_positive[1], hard_negative])
@@ -63,3 +64,12 @@ class TripletSelector(torch.nn.Module):
         triplets = np.array(triplets)
 
         return torch.LongTensor(triplets)
+
+
+class PairSelector(torch.nn.Module):
+    def __init__(self):
+        super(PairSelector, self).__init__()
+        raise NotImplementedError
+
+    def forward(self):
+        raise NotImplementedError
