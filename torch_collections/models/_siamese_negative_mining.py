@@ -24,6 +24,7 @@ def hardest_negative(loss_values, margin):
 class TripletSelector(torch.nn.Module):
     def __init__(self, negative_mining_type, margin, pdist, cpu=True):
         super(TripletSelector, self).__init__()
+        self.margin = margin
         self.pdist = pdist
         self.cpu = cpu
         if negative_mining_type == 'random':
