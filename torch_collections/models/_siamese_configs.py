@@ -24,6 +24,9 @@ _c.margin    = 0.5
 _c.dist_type = 'euclidean'  # option of ['euclidean', 'cosine']
 _c.p_norm    = 2.0  # normalization degree in euclidean distance
 
+### Sample selection strategy
+_c.negative_mining_type = 'hard'  # option of ['random', 'semihard', 'hard']
+
 ################################################################################
 #### End of configurable parameters
 
