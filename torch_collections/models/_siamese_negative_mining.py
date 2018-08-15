@@ -1,5 +1,7 @@
 """ Referenced from https://github.com/adambielski/siamese-triplet/blob/master/utils.py """
 
+import itertools
+
 import numpy as np
 import torch
 
@@ -46,7 +48,7 @@ class TripletSelector(torch.nn.Module):
             if len(label_indices) < 2:
                 continue
             negative_indices = np.where(np.logical_not(label_mask))[0]
-            anchor_positives = list(combinations(label_indices, 2))  # All anchor-positive pairs
+            anchor_positives = list(itertools.combinations(label_indices, 2))  # All anchor-positive pairs
             anchor_positives = np.array(anchor_positives)
 
             ap_distances = distance_matrix[anchor_positives[:, 0], anchor_positives[:, 1]]
