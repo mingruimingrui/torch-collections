@@ -41,6 +41,7 @@ The `Siamese` network is a `torch.nn.Module` object and share all of it's functi
 | `margin` | `type: float` `default: 0.5` <br> The margin to use for both triplet and contrastive loss |
 | `dist_type` | `type: string` `default: 'euclidean'` `option: ['euclidean', 'cosine']` <br> The distance function to utilize. |
 | `p_norm` | `type: float` `default: 2.0` <br> The normalization degree in euclidean distance. |
+| `negative_mining_type` | `type: string` `default: 'hard'` `option: ['random', 'semihard', 'hard']` <br> The sample selection strategy to be used in select_pairs and select_triplets. |
 
 <br>
 
