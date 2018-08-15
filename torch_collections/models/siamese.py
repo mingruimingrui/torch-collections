@@ -17,6 +17,7 @@ from ._siamese import (
     DynamicTripletLoss,
     DynamicContrastiveLoss
 )
+from ._siamese_negative_mining import TripletSelector
 
 # Other modules
 from ..modules import L2Normalization
@@ -85,6 +86,14 @@ class Siamese(torch.nn.Module):
         self.contrastive_loss = DynamicContrastiveLoss(
             margin=self.configs['margin'],
             dist_fn=self.dist_fn
+        )
+
+        # Sample selection
+        self.select_triplets = TripletSelector(
+            negative_mining_type=self.configs['negative_mining_type'],
+            margin=self.configs['margin'],
+            pdist=self.pdist_fn,
+            cpu=True
         )
 
     def forward(self, x):
