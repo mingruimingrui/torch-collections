@@ -50,6 +50,9 @@ The initialization of the `RetinaNet` will store all parameters in `RetinaNet.co
 | `classification_num_layers` | `type: int` `default: 4` <br> The number of layers in the classification model. |
 | `classification_feature_size` | `type: int` `default: 256` <br> The internal channel size of the classification model (only for `'fc'`). |
 | `classification_growth_rate` | `type: int` `default: 64` <br> The channel growth rate of the classification model (only for `'dense'`). |
+| `nms_threshold` | `type: float` `default: 0.5` <br> The amount of overlap required to ignore a detection. |
+| `score_threshold` | `type: float` `default: 0.05` <br> The lowest score for detection to be valid object. |
+| `max_detections` | `type: int` `default: 300` <br> The maximum number of detections to output. |
 
 <br>
 

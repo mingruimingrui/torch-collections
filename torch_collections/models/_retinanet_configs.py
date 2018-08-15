@@ -33,6 +33,10 @@ _c.classification_num_layers   = 4
 _c.classification_feature_size = 256  # Classification model internal channel size (only for 'fc')
 _c.classification_growth_rate  = 64   # Classification model channel growth rate (only for 'dense')
 
+_c.nms_threshold   = 0.5
+_c.score_threshold = 0.05
+_c.max_detections  = 300
+
 ################################################################################
 #### End of configurable parameters
 
