@@ -25,7 +25,7 @@ def squeezenet1_0_fpn_feature_shape_fn(img_shape):
     P6_shape = (math.ceil(P5_shape[0] / 2), math.ceil(P5_shape[1] / 2))
     P7_shape = (math.ceil(P6_shape[0] / 2), math.ceil(P6_shape[1] / 2))
 
-    return C1_shape, C2_shape, C3_shape, C4_shape, C5_shape, C6_shape
+    return C2_shape, C3_shape, C4_shape, C5_shape, C6_shape, P7_shape
 
 
 def squeezenet1_1_fpn_feature_shape_fn(img_shape):
@@ -50,7 +50,7 @@ def squeezenet1_1_fpn_feature_shape_fn(img_shape):
     P6_shape = (math.ceil(P5_shape[0] / 2), math.ceil(P5_shape[1] / 2))
     P7_shape = (math.ceil(P6_shape[0] / 2), math.ceil(P6_shape[1] / 2))
 
-    return C1_shape, C2_shape, C3_shape, C4_shape, C5_shape, C6_shape
+    return C2_shape, C3_shape, C4_shape, C5_shape, C6_shape, P7_shape
 
 
 def get_squeezenet_backbone_channel_sizes(backbone_name):
