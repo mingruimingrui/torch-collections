@@ -70,7 +70,7 @@ class SqueezeNetBackbone(torch.nn.Module):
         self.backbone_name = backbone_name
 
         # Load a pretrained squeezenet model
-        squeezenet_model = getattr(torchvision.models, backbone_name)(pretrained=True)
+        squeezenet_model = getattr(torchvision.models, self.backbone_name)(pretrained=True)
 
         # Copy layers with weights
         self.conv1   = squeezenet_model.features[0]
@@ -98,7 +98,7 @@ class SqueezeNetBackbone(torch.nn.Module):
             self.fire8 = squeezenet_model.features[12]
 
         else:
-            raise Exception('{} is not a valid squeezenet backbone'.format(backbone_name))
+            raise Exception('{} is not a valid squeezenet backbone'.format(self.backbone_name))
 
         # Delete uneeded tensors
         del squeezenet_model
@@ -143,7 +143,7 @@ class SqueezeNetBackbone(torch.nn.Module):
             C4 = self.fire8(C4)
 
         else:
-            raise Exception('{} is not a valid squeezenet backbone'.format(backbone_name))
+            raise Exception('{} is not a valid squeezenet backbone'.format(self.backbone_name))
 
         C5 = self.maxpool(C4)
 
