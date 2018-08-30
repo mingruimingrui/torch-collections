@@ -51,9 +51,11 @@ def generate_anchors_at_window(
     if not isinstance(scales, torch.Tensor):
         scales = torch.Tensor(scales)
 
-    num_anchors = len(ratios) * len(scales)
-    tiled_scales = scales.repeat(3)
-    repeated_ratios = torch.stack([ratios] * 3).transpose(0, 1).reshape(-1)
+    num_ratios = len(ratios)
+    num_scales = len(scales)
+    num_anchors = num_ratios * num_scales
+    tiled_scales = scales.repeat(num_ratios)
+    repeated_ratios = torch.stack([ratios] * num_scales).transpose(0, 1).reshape(-1)
 
     # initialize output anchors
     anchors = torch.zeros(num_anchors, 4)
