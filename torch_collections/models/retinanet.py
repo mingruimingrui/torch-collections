@@ -100,11 +100,7 @@ class RetinaNet(torch.nn.Module):
         )
 
         # Create loss function
-        self.loss_fn = RetinaNetLoss(
-            num_classes=self.configs['num_classes'],
-            fpn_feature_shape_fn=self.fpn_feature_shape_fn,
-            compute_anchors=self.compute_anchors
-        )
+        self.loss_fn = RetinaNetLoss(num_classes=self.configs['num_classes'])
 
         # Create functions to inverse the bbox transform
         self.regress_boxes = RegressBoxes()
@@ -133,15 +129,13 @@ class RetinaNet(torch.nn.Module):
         regression     = torch.cat(regression_outputs    , 1)
         classification = torch.cat(classification_outputs, 1)
 
+        # Compute anchors
+        feature_shapes = self.fpn_feature_shape_fn(image.shape)[-5:]
+        anchors = self.compute_anchors(image.shape[0], feature_shapes)
+
         # Train on regression and classification
         if self.training:
-            return self.loss_fn(regression, classification, image, annotations)
-
-        # Collect batch information
-        feature_shapes = self.fpn_feature_shape_fn(image.shape)[-5:]
-
-        # Compute base anchors
-        anchors = self.compute_anchors(image.shape[0], feature_shapes)
+            return self.loss_fn(regression, classification, annotations, anchors)
 
         # Apply predicted regression to anchors
         boxes = self.regress_boxes(anchors, regression)
