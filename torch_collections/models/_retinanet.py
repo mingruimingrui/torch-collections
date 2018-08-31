@@ -10,33 +10,36 @@ from ..utils import anchors as utils_anchors
 
 
 def compute_targets(
-    batch_image,
     batch_annotations,
+    anchors,
     num_classes,
-    fpn_feature_shape_fn,
-    compute_anchors,
-    regression_mean,
-    regression_std
+    regression_mean=0.0,
+    regression_std=0.2
 ):
-    # Compute anchors given image shape
-    image_shape = batch_image.shape
-    feature_shapes = fpn_feature_shape_fn(image_shape)[-5:]
-    anchors = compute_anchors(1, feature_shapes)[0]
-
+    """ Function to compute the classification and regression targets given a set of annotations and anchors
+    Args
+        batch_annotations : List of annotations where each annotation is a (num_detection, 5) shaped torch.Tensor
+        anchors           : torch.Tensor containing all anchors generated on the image_batch
+                            should be (batch_size, num_anchors, 4) shaped
+        num_classes       : Number of classes model classifies
+        regression_mean   : The regression mean shift for (x1, y1, x2, y2)
+        regression_std    : The regression scale for (x1, y1, x2, y2)
+    Returns
+    """
     # Create blobs to store anchor informations
     regression_batch = []
     labels_batch = []
     states_batch = []
 
-    for annotations in batch_annotations:
+    for annotations, anchor in zip(batch_annotations, anchors):
         labels, annotations, anchor_states = utils_anchors.anchor_targets_bbox(
-            anchors,
+            anchor,
             annotations,
             num_classes=num_classes,
             mask_shape=image_shape
         )
         regression = utils_anchors.bbox_transform(
-            anchors,
+            anchor,
             annotations,
             mean=regression_mean,
             std=regression_std
@@ -286,8 +289,6 @@ class RetinaNetLoss(torch.nn.Module):
     def __init__(
         self,
         num_classes,
-        fpn_feature_shape_fn,
-        compute_anchors,
         focal_alpha=0.25,
         focal_gamma=2.0,
         huber_sigma=3.0,
@@ -296,8 +297,6 @@ class RetinaNetLoss(torch.nn.Module):
     ):
         super(RetinaNetLoss, self).__init__()
         self.num_classes = num_classes
-        self.fpn_feature_shape_fn = fpn_feature_shape_fn
-        self.compute_anchors = compute_anchors
 
         self.regression_mean = regression_mean
         self.regression_std  = regression_std
@@ -305,13 +304,11 @@ class RetinaNetLoss(torch.nn.Module):
         self.focal_loss_fn = DetectionFocalLoss(alpha=focal_alpha, gamma=focal_gamma)
         self.huber_loss_fn = DetectionSmoothL1Loss(sigma=huber_sigma)
 
-    def forward(self, output_regression, output_classification, batch_image, batch_annotations):
+    def forward(self, output_regression, output_classification, batch_annotations, anchors):
         # Compute targets
         target_regression, target_classification, anchor_states = compute_targets(
-            batch_image, batch_annotations,
+            batch_annotations, anchors,
             num_classes=self.num_classes,
-            fpn_feature_shape_fn=self.fpn_feature_shape_fn,
-            compute_anchors=self.compute_anchors,
             regression_mean=self.regression_mean,
             regression_std=self.regression_std
         )
