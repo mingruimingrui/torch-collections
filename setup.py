@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name='torch-collections',
-    version='0.3b',
+    version='0.4b',
     description='A collection of deep learning models, and utility tookit written in torch',
     url='https://github.com/mingruimingrui/torch-collections',
     author='Wang Ming Rui',
