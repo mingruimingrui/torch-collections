@@ -11,6 +11,7 @@ from ..utils import anchors as utils_anchors
 
 def compute_targets(
     batch_annotations,
+    image_shape,
     anchors,
     num_classes,
     regression_mean=0.0,
@@ -304,10 +305,10 @@ class RetinaNetLoss(torch.nn.Module):
         self.focal_loss_fn = DetectionFocalLoss(alpha=focal_alpha, gamma=focal_gamma)
         self.huber_loss_fn = DetectionSmoothL1Loss(sigma=huber_sigma)
 
-    def forward(self, output_regression, output_classification, batch_annotations, anchors):
+    def forward(self, output_regression, output_classification, batch_annotations, image_shape, anchors):
         # Compute targets
         target_regression, target_classification, anchor_states = compute_targets(
-            batch_annotations, anchors,
+            batch_annotations, image_shape, anchors,
             num_classes=self.num_classes,
             regression_mean=self.regression_mean,
             regression_std=self.regression_std

@@ -135,7 +135,7 @@ class RetinaNet(torch.nn.Module):
 
         # Train on regression and classification
         if self.training:
-            return self.loss_fn(regression, classification, annotations, anchors)
+            return self.loss_fn(regression, classification, annotations, image.shape[-2:], anchors)
 
         # Apply predicted regression to anchors
         boxes = self.regress_boxes(anchors, regression)
