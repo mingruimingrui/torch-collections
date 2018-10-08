@@ -149,7 +149,7 @@ class FeaturePyramidSubmodel(torch.nn.Module):
             self.conv_C3_reduce = torch.nn.Conv2d(C3_size, feature_size, kernel_size=1, stride=1, padding=0)
             self.conv_P3 = torch.nn.Conv2d(feature_size, feature_size, kernel_size=3, stride=1, padding=1)
 
-        if self.min_feature_Level <= 2:
+        if self.min_feature_level <= 2:
             self.conv_C2_reduce = torch.nn.Conv2d(C2_size, feature_size, kernel_size=1, stride=1, padding=0)
             self.conv_P2 = torch.nn.Conv2d(feature_size, feature_size, kernel_size=3, stride=1, padding=1)
 
@@ -180,7 +180,7 @@ class FeaturePyramidSubmodel(torch.nn.Module):
             P3 = self.conv_C3_reduce(C3)
             P[3] = self.conv_P3(P4_upsampled + P3)
 
-        if self.min_feature_Level <= 2:
+        if self.min_feature_level <= 2:
             # add P3 elementwise to C2
             P3_upsampled = interpolate(P3, size=C2.shape[-2:], mode='bilinear', align_corners=False)
             P2 = self.conv_C2_reduce(C2)

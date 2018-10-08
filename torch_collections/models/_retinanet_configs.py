@@ -51,7 +51,7 @@ _c.immutable(True)
 
 def validate_configs(configs):
     assert isinstance(configs.num_classes, int), 'num_classes must be specified'
-    assert 'resnet' in backbone, 'only resnet backbones supported'
+    assert 'resnet' in configs.backbone, 'only resnet backbones supported'
 
     assert isinstance(configs.pyramid_feature_levels, (list, tuple)), 'feature levels should be a list'
     assert all([(l in ACCEPTED_FEATURE_LEVELS) for l in configs.pyramid_feature_levels])
@@ -60,8 +60,8 @@ def validate_configs(configs):
     assert len(configs.anchor_sizes) == num_levels, 'number of anchor_sizes should be same as feature levels'
     assert len(configs.anchor_strides) == num_levels, 'number of anchor_strides should be same as feature levels'
 
-    assert regression_block_type in ['fc', 'dense'], "regression_block_type should be in ['fc', 'dense']"
-    assert classification_block_type in ['fc', 'dense'], "classification_block_type should be in ['fc', 'dense']"
+    assert configs.regression_block_type in ['fc', 'dense'], "regression_block_type should be in ['fc', 'dense']"
+    assert configs.classification_block_type in ['fc', 'dense'], "classification_block_type should be in ['fc', 'dense']"
 
     configs.num_anchors = len(configs.anchor_ratios) * len(configs.anchor_scales)
 
