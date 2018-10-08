@@ -21,7 +21,8 @@ _c.anchor_strides = [8, 16, 32, 64, 128]
 _c.anchor_ratios  = [0.5, 1., 2.]
 _c.anchor_scales  = [2. ** 0., 2. ** (1. / 3.), 2. ** (2. / 3.)]
 
-_c.pyramid_feature_size = 256
+_c.pyramid_feature_levels = '3-7'  # option of ['3-7', '2-6']
+_c.pyramid_feature_size   = 256
 
 _c.regression_block_type   = 'fc'  # one of ['fc', 'dense']
 _c.regression_num_layers   = 4
@@ -33,9 +34,12 @@ _c.classification_num_layers   = 4
 _c.classification_feature_size = 256  # Classification model internal channel size (only for 'fc')
 _c.classification_growth_rate  = 64   # Classification model channel growth rate (only for 'dense')
 
+_c.apply_nms       = True
 _c.nms_threshold   = 0.5
 _c.score_threshold = 0.05
 _c.max_detections  = 300
+_c.nms_type        = 'hard'
+_c.nms_use_cpu     = True
 
 ################################################################################
 #### End of configurable parameters

@@ -123,9 +123,19 @@ def _make_dynamic_block(
     return block, output_size
 
 
-class FeaturePyramidSubmodel(torch.nn.Module):
+def FeaturePyramidSubmodel(backbone_channel_sizes, feature_size=256, feature_levels='3-7'):
+    if feature_levels == '3-7':
+        return FeaturePyramidSubmodel_3_7(backbone_channel_sizes, feature_size)
+    elif feature_levels == '2-6':
+        return FeaturePyramidSubmodel_2_6(backbone_channel_sizes, feature_size)
+    else:
+        raise Exception("feature_levels must be in ['3-7', '2-6'], got {}".format(feature_levels))
+
+
+
+class FeaturePyramidSubmodel_3_7(torch.nn.Module):
     def __init__(self, backbone_channel_sizes, feature_size=256):
-        super(FeaturePyramidSubmodel, self).__init__()
+        super(FeaturePyramidSubmodel_3_7, self).__init__()
         C3_size, C4_size, C5_size = backbone_channel_sizes[-3:]
 
         self.relu           = torch.nn.ReLU(inplace=False)
@@ -142,10 +152,12 @@ class FeaturePyramidSubmodel(torch.nn.Module):
         self.conv_P6        = torch.nn.Conv2d(C5_size     , feature_size, kernel_size=3, stride=2, padding=1)
         self.conv_P7        = torch.nn.Conv2d(feature_size, feature_size, kernel_size=3, stride=2, padding=1)
 
-    def forward(self, C3, C4, C5):
+    def forward(self, features):
+        C3, C4, C5 = features[-3:]
+
         # upsample C5 to get P5 from the FPN paper
         P5           = self.conv_C5_reduce(C5)
-        if torch.__version__ == '0.4.1':
+        if torch.__version__ in ['0.4.1', '0.4.1.post2']:
             P5_upsampled = torch.nn.functional.interpolate(P5, size=C4.shape[-2:], mode='bilinear', align_corners=False)
         else:
             P5_upsampled = torch.nn.functional.upsample(P5, size=C4.shape[-2:], mode='bilinear', align_corners=False)
@@ -154,7 +166,7 @@ class FeaturePyramidSubmodel(torch.nn.Module):
         # add P5 elementwise to C4
         P4           = self.conv_C4_reduce(C4)
         P4           = P5_upsampled + P4
-        if torch.__version__ == '0.4.1':
+        if torch.__version__ in ['0.4.1', '0.4.1.post2']:
             P4_upsampled = torch.nn.functional.interpolate(P4, size=C3.shape[-2:], mode='bilinear', align_corners=False)
         else:
             P4_upsampled = torch.nn.functional.upsample(P4, size=C3.shape[-2:], mode='bilinear', align_corners=False)
@@ -173,6 +185,67 @@ class FeaturePyramidSubmodel(torch.nn.Module):
         P7 = self.conv_P7(P7)
 
         return P3, P4, P5, P6, P7
+
+
+class FeaturePyramidSubmodel_2_6(torch.nn.Module):
+    def __init__(self, backbone_channel_sizes, feature_size=256):
+        super(FeaturePyramidSubmodel_2_6, self).__init__()
+        C2_size, C3_size, C4_size, C5_size = backbone_channel_sizes[-4:]
+
+        self.relu           = torch.nn.ReLU(inplace=False)
+
+        self.conv_C5_reduce = torch.nn.Conv2d(C5_size     , feature_size, kernel_size=1, stride=1, padding=0)
+        self.conv_P5        = torch.nn.Conv2d(feature_size, feature_size, kernel_size=3, stride=1, padding=1)
+
+        self.conv_C4_reduce = torch.nn.Conv2d(C4_size     , feature_size, kernel_size=1, stride=1, padding=0)
+        self.conv_P4        = torch.nn.Conv2d(feature_size, feature_size, kernel_size=3, stride=1, padding=1)
+
+        self.conv_C3_reduce = torch.nn.Conv2d(C3_size     , feature_size, kernel_size=1, stride=1, padding=0)
+        self.conv_P3        = torch.nn.Conv2d(feature_size, feature_size, kernel_size=3, stride=1, padding=1)
+
+        self.conv_C2_reduce = torch.nn.Conv2d(C2_size     , feature_size, kernel_size=1, stride=1, padding=0)
+        self.conv_P2        = torch.nn.Conv2d(feature_size, feature_size, kernel_size=3, stride=1, padding=1)
+
+        self.conv_P6        = torch.nn.Conv2d(C5_size     , feature_size, kernel_size=3, stride=2, padding=1)
+
+    def forward(self, features):
+        C2, C3, C4, C5 = features[-4:]
+
+        # upsample C5 to get P5 from the FPN paper
+        P5           = self.conv_C5_reduce(C5)
+        if torch.__version__ in ['0.4.1', '0.4.1.post2']:
+            P5_upsampled = torch.nn.functional.interpolate(P5, size=C4.shape[-2:], mode='bilinear', align_corners=False)
+        else:
+            P5_upsampled = torch.nn.functional.upsample(P5, size=C4.shape[-2:], mode='bilinear', align_corners=False)
+        P5           = self.conv_P5(P5)
+
+        # add P5 elementwise to C4
+        P4           = self.conv_C4_reduce(C4)
+        P4           = P5_upsampled + P4
+        if torch.__version__ in ['0.4.1', '0.4.1.post2']:
+            P4_upsampled = torch.nn.functional.interpolate(P4, size=C3.shape[-2:], mode='bilinear', align_corners=False)
+        else:
+            P4_upsampled = torch.nn.functional.upsample(P4, size=C3.shape[-2:], mode='bilinear', align_corners=False)
+        P4           = self.conv_P4(P4)
+
+        # add P4 elementwise to C3
+        P3           = self.conv_C3_reduce(C3)
+        P3           = P4_upsampled + P3
+        if torch.__version__ in ['0.4.1', '0.4.1.post2']:
+            P3_upsampled = torch.nn.functional.interpolate(P3, size=C2.shape[-2:], mode='bilinear', align_corners=False)
+        else:
+            P3_upsampled = torch.nn.functional.upsample(P3, size=C2.shape[-2:], mode='bilinear', align_corners=False)
+        P3           = self.conv_P3(P3)
+
+        # add P3 elementwise to C2
+        P2 = self.conv_C2_reduce(C2)
+        P2 = P3_upsampled + P2
+        P2 = self.conv_P2(P2)
+
+        # "P6 is obtained via a 3x3 stride-2 conv on C5"
+        P6 = self.conv_P6(C5)
+
+        return P2, P3, P4, P5, P6
 
 
 class DynamicRegressionModel(torch.nn.Module):

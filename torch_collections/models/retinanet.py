@@ -8,8 +8,7 @@ from ._retinanet_configs import make_configs
 # Backbone loader functions
 from ._backbone import (
     build_backbone_model,
-    get_backbone_channel_sizes,
-    build_fpn_feature_shape_fn
+    get_backbone_channel_sizes
 )
 
 # RetinaNet submodels
@@ -60,7 +59,6 @@ class RetinaNet(torch.nn.Module):
         self.configs = make_configs(**kwargs)
 
         # Make helper functions and modules
-        self.fpn_feature_shape_fn = build_fpn_feature_shape_fn(self.configs['backbone'])
         self.build_modules()
 
     def build_modules(self):
@@ -69,7 +67,8 @@ class RetinaNet(torch.nn.Module):
         self.backbone_model = build_backbone_model(self.configs['backbone'])
         self.feature_pyramid_submodel = FeaturePyramidSubmodel(
             backbone_channel_sizes=get_backbone_channel_sizes(self.configs['backbone']),
-            feature_size=self.configs['pyramid_feature_size']
+            feature_size=self.configs['pyramid_feature_size'],
+            feature_levels=self.configs['pyramid_feature_levels']
         )
 
         # Make regression and classification models
@@ -110,7 +109,10 @@ class RetinaNet(torch.nn.Module):
         self.filter_detections = FilterDetections(
             nms_threshold=self.configs['nms_threshold'],
             score_threshold=self.configs['score_threshold'],
-            max_detections=self.configs['max_detections']
+            max_detections=self.configs['max_detections'],
+            apply_nms=self.configs['apply_nms'],
+            type=self.configs['nms_type'],
+            use_cpu=self.configs['nms_use_cpu']
         )
 
     def forward(self, image, annotations=None):
@@ -118,8 +120,8 @@ class RetinaNet(torch.nn.Module):
             assert annotations is not None
 
         # Calculate features
-        C3, C4, C5 =  self.backbone_model(image)[-3:]
-        features = self.feature_pyramid_submodel(C3, C4, C5)
+        features = self.backbone_model(image)
+        features = self.feature_pyramid_submodel(features)
 
         # Apply regression and classification submodels on each feature
         regression_outputs     = [self.regression_submodel(f)     for f in features]
@@ -130,7 +132,7 @@ class RetinaNet(torch.nn.Module):
         classification = torch.cat(classification_outputs, 1)
 
         # Compute anchors
-        feature_shapes = self.fpn_feature_shape_fn(image.shape)[-5:]
+        feature_shapes = [f.shape[-2:] for f in features]
         anchors = self.compute_anchors(image.shape[0], feature_shapes)
 
         # Train on regression and classification
