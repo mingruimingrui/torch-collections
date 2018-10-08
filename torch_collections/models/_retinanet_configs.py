@@ -17,6 +17,7 @@ _c.num_classes = None
 
 _c.backbone        = 'resnet50'
 _c.freeze_backbone = False  # Does not actually work at the moment will implement in future
+_c.return_loss     = True   # If True, returns loss during training
 
 _c.pyramid_feature_levels = [3, 4, 5, 6, 7]  # Any combination of [2, 3, 4, 5, 6, 7] in list form
 _c.pyramid_feature_size   = 256

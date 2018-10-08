@@ -71,6 +71,15 @@ class RetinaNet(torch.nn.Module):
             feature_levels=self.configs['pyramid_feature_levels']
         )
 
+        # Create function to compute anchors based on feature shapes
+        self.compute_anchors = ComputeAnchors(
+            feature_levels=self.configs['pyramid_feature_levels'],
+            sizes=self.configs['anchor_sizes'],
+            strides=self.configs['anchor_strides'],
+            ratios=self.configs['anchor_ratios'],
+            scales=self.configs['anchor_scales']
+        )
+
         # Make regression and classification models
         self.regression_submodel = DynamicRegressionModel(
             self.configs['num_anchors'],
@@ -88,15 +97,6 @@ class RetinaNet(torch.nn.Module):
             growth_rate=self.configs['classification_growth_rate'],
             num_layers=self.configs['classification_num_layers'],
             block_type=self.configs['classification_block_type']
-        )
-
-        # Create function to compute anchors based on feature shapes
-        self.compute_anchors = ComputeAnchors(
-            feature_levels=self.configs['pyramid_feature_levels'],
-            sizes=self.configs['anchor_sizes'],
-            strides=self.configs['anchor_strides'],
-            ratios=self.configs['anchor_ratios'],
-            scales=self.configs['anchor_scales']
         )
 
         # Create loss function
@@ -120,6 +120,10 @@ class RetinaNet(torch.nn.Module):
         if self.training:
             assert annotations is not None
 
+        image_shape = image.shape
+        batch_size = image_shape[0]
+        image_hw = image_shape[-2:]
+
         # Calculate features
         features = self.backbone_model(image)
         features = self.feature_pyramid_submodel(features)
@@ -128,21 +132,24 @@ class RetinaNet(torch.nn.Module):
         regression_outputs     = [self.regression_submodel(f)     for f in features]
         classification_outputs = [self.classification_submodel(f) for f in features]
 
+        # Compute anchors
+        feature_shapes = [f.shape[-2:] for f in features]
+        anchors = self.compute_anchors(batch_size, feature_shapes)
+
         # Concat outputs
         regression     = torch.cat(regression_outputs    , 1)
         classification = torch.cat(classification_outputs, 1)
 
-        # Compute anchors
-        feature_shapes = [f.shape[-2:] for f in features]
-        anchors = self.compute_anchors(image.shape[0], feature_shapes)
-
         # Train on regression and classification
         if self.training:
-            return self.loss_fn(regression, classification, annotations, image.shape[-2:], anchors)
+            if self.configs['return_loss']:
+                return self.loss_fn(regression, classification, annotations, image_hw, anchors)
+            else:
+                return regression, classification, annotations, image_hw, anchors
 
         # Apply predicted regression to anchors
         boxes = self.regress_boxes(anchors, regression)
-        boxes = self.clip_boxes(image.shape, boxes)
+        boxes = self.clip_boxes(image_shape, boxes)
 
         detections = self.filter_detections(boxes, classification)
 
