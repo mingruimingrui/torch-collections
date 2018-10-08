@@ -3,6 +3,8 @@ from copy import deepcopy
 
 from ..utils.collections import AttrDict
 
+ACCEPTED_FEATURE_LEVELS = set([2, 3, 4, 5, 6, 7])
+
 # Define default parameters
 _c = AttrDict()
 
@@ -16,13 +18,13 @@ _c.num_classes = None
 _c.backbone        = 'resnet50'
 _c.freeze_backbone = False  # Does not actually work at the moment will implement in future
 
-_c.anchor_sizes   = [32, 64, 128, 256, 512]
-_c.anchor_strides = [8, 16, 32, 64, 128]
+_c.pyramid_feature_levels = [3, 4, 5, 6, 7]  # Any combination of [2, 3, 4, 5, 6, 7] in list form
+_c.pyramid_feature_size   = 256
+
+_c.anchor_sizes   = [32, 64, 128, 256, 512]  # Same number of values as feature levels
+_c.anchor_strides = [8, 16, 32, 64, 128]     # Same number of values as feature levels
 _c.anchor_ratios  = [0.5, 1., 2.]
 _c.anchor_scales  = [2. ** 0., 2. ** (1. / 3.), 2. ** (2. / 3.)]
-
-_c.pyramid_feature_levels = '3-7'  # option of ['3-7', '2-6']
-_c.pyramid_feature_size   = 256
 
 _c.regression_block_type   = 'fc'  # one of ['fc', 'dense']
 _c.regression_num_layers   = 4
@@ -49,6 +51,18 @@ _c.immutable(True)
 
 def validate_configs(configs):
     assert isinstance(configs.num_classes, int), 'num_classes must be specified'
+    assert 'resnet' in backbone, 'only resnet backbones supported'
+
+    assert isinstance(configs.pyramid_feature_levels, (list, tuple)), 'feature levels should be a list'
+    assert all([(l in ACCEPTED_FEATURE_LEVELS) for l in configs.pyramid_feature_levels])
+
+    num_levels = len(configs.pyramid_feature_levels)
+    assert len(configs.anchor_sizes) == num_levels, 'number of anchor_sizes should be same as feature levels'
+    assert len(configs.anchor_strides) == num_levels, 'number of anchor_strides should be same as feature levels'
+
+    assert regression_block_type in ['fc', 'dense'], "regression_block_type should be in ['fc', 'dense']"
+    assert classification_block_type in ['fc', 'dense'], "classification_block_type should be in ['fc', 'dense']"
+
     configs.num_anchors = len(configs.anchor_ratios) * len(configs.anchor_scales)
 
 def make_configs(**kwargs):
@@ -59,9 +73,7 @@ def make_configs(**kwargs):
     for arg, value in kwargs.items():
         configs[arg] = value
 
-    # Validate
     validate_configs(configs)
-
     configs.immutable(True)
 
     return configs

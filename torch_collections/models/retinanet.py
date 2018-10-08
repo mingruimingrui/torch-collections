@@ -92,6 +92,7 @@ class RetinaNet(torch.nn.Module):
 
         # Create function to compute anchors based on feature shapes
         self.compute_anchors = ComputeAnchors(
+            feature_levels=self.configs['pyramid_feature_levels'],
             sizes=self.configs['anchor_sizes'],
             strides=self.configs['anchor_strides'],
             ratios=self.configs['anchor_ratios'],
