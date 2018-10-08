@@ -1,4 +1,6 @@
 import setuptools
+from Cython.Build import cythonize
+import numpy as np
 
 setuptools.setup(
     name='torch-collections',
@@ -13,5 +15,7 @@ setuptools.setup(
         'torch_collections.models',
         'torch_collections.modules',
         'torch_collections.utils'
-    ]
+    ],
+    include_dirs=[np.get_include()],
+    ext_modules=cythonize('torch_collections/utils/cpu_nms.pyx')
 )
