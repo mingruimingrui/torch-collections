@@ -107,6 +107,9 @@ venv.bak/
 snapshot
 logs
 
+# Depreciated scripts
+dep
+
 # debug scripts
 *debug*
 
